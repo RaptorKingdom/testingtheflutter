@@ -13,7 +13,7 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:html/parser.dart' as html_parser;
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:persian_datepicker/persian_datepicker.dart';
+import 'package:jalali_flutter_datepicker/jalali_flutter_datepicker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 part 'main.g.dart'; // Hive generated file
@@ -815,9 +815,11 @@ class GoldListScreen extends StatelessWidget {
                     title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
                     trailing: Icon(Icons.calendar_today),
                     onTap: () async {
-                      final picked = await PersianDatePicker.showDialog(
-                        context: context,
+                      final picked = await JalaliFlutterDatePicker.show(
+                        context,
                         initialDate: Jalali.fromDateTime(selectedDate),
+                        firstDate: Jalali(1400, 1, 1),
+                        lastDate: Jalali.now(),
                       );
                       if (picked != null) selectedDate = picked.toDateTime();
                     },
@@ -1044,9 +1046,11 @@ class CoinListScreen extends StatelessWidget {
                   title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
                   trailing: Icon(Icons.calendar_today),
                   onTap: () async {
-                    final picked = await PersianDatePicker.showDialog(
-                      context: context,
+                    final picked = await JalaliFlutterDatePicker.show(
+                      context,
                       initialDate: Jalali.fromDateTime(selectedDate),
+                      firstDate: Jalali(1400, 1, 1),
+                      lastDate: Jalali.now(),
                     );
                     if (picked != null) selectedDate = picked.toDateTime();
                   },
