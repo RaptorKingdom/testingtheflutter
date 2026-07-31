@@ -82,7 +82,8 @@ String formatToman(double amount) {
 String numberToTomanWords(double amount) {
   final toman = amount / 10;
   final intValue = toman.round();
-  final words = intValue.toPersianWords();
+  // استفاده از extension روی String
+  final words = intValue.toString().toPersianWords();
   return words.toPersianDigit() + ' تومان';
 }
 
