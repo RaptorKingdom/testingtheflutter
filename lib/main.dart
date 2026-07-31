@@ -31,7 +31,6 @@ String formatDoubleWithoutTrailingZeros(double value) {
   if (value == value.roundToDouble()) {
     return value.round().toString();
   } else {
-    // حذف صفرهای اضافی انتهایی
     String str = value.toString();
     if (str.contains('.')) {
       str = str.replaceAll(RegExp(r'0*$'), '');
@@ -72,7 +71,7 @@ String goldTypeName(String k) {
   }
 }
 
-/// تبدیل عدد به تومان (با جداکننده و پسوند)
+/// تبدیل عدد به تومان (برای نمایش زیر ورودی)
 String formatToman(double amount) {
   final toman = amount / 10;
   final formatted = NumberFormat('#,###').format(toman);
@@ -166,7 +165,7 @@ Future<DateTime?> pickJalaliDate(BuildContext context, DateTime initial) async {
   final picked = await showPersianDatePicker(
     context: context,
     initialDate: initial,
-    firstDate: DateTime(1370, 1, 1), // از سال ۱۳۷۰
+    firstDate: DateTime(1370, 1, 1),
     lastDate: DateTime.now(),
   );
   return picked;
@@ -321,8 +320,23 @@ class ApiService {
           final cd = _parseChange(span.text.trim());
           if (cd != null) { cVal = cd['value']; cPct = cd['percent']; }
         }
+
+        // تبدیل قیمت‌ها به ریال (به جز انس طلا که دلار است)
+        const rialsMultiplier = 10.0;
+        if (key != 'gold_ons') {
+          cur = cur != null ? cur * rialsMultiplier : null;
+          high = high != null ? high * rialsMultiplier : null;
+          low = low != null ? low * rialsMultiplier : null;
+          yday = yday != null ? yday * rialsMultiplier : null;
+          // تغییرات (cVal) نیز قیمت است و باید ضرب شود
+          if (cVal != null) cVal = cVal * rialsMultiplier;
+        }
+
         prices[key] = PriceResponse(
-          name: name, currentPrice: cur, high: high, low: low,
+          name: name,
+          currentPrice: cur,
+          high: high,
+          low: low,
           yesterdayAvg: yday,
           change: Change(value: cVal, percent: cPct, direction: dir),
         );
