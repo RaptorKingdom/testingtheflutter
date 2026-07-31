@@ -78,13 +78,21 @@ String formatToman(double amount) {
   return '${formatted.toPersianDigit()} تومان';
 }
 
-/// ویجت ورودی عدد با نمایش تومانی زیر آن
+/// تبدیل عدد به حروف تومان
+String numberToTomanWords(double amount) {
+  final toman = amount / 10;
+  // استفاده از پکیج persian_number_utility برای تبدیل به حروف
+  return toman.toPersianWords().toPersianDigit() + ' تومان';
+}
+
+/// ویجت ورودی عدد با نمایش تومانی و حروف زیر آن
 class NumberInputWithToman extends StatefulWidget {
   final String label;
   final String? initialValue;
   final ValueChanged<String> onSaved;
   final TextInputType keyboardType;
   final FormFieldValidator<String>? validator;
+  final bool isPrice; // برای تشخیص قیمت بودن و نمایش تومان
 
   const NumberInputWithToman({
     Key? key,
@@ -93,6 +101,7 @@ class NumberInputWithToman extends StatefulWidget {
     required this.onSaved,
     this.keyboardType = TextInputType.number,
     this.validator,
+    this.isPrice = true,
   }) : super(key: key);
 
   @override
@@ -102,27 +111,30 @@ class NumberInputWithToman extends StatefulWidget {
 class _NumberInputWithTomanState extends State<NumberInputWithToman> {
   late TextEditingController _controller;
   String _tomanText = '';
+  String _wordsText = '';
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue ?? '');
-    _updateToman(_controller.text);
+    _updateDisplay(_controller.text);
     _controller.addListener(() {
-      _updateToman(_controller.text);
+      _updateDisplay(_controller.text);
     });
   }
 
-  void _updateToman(String value) {
+  void _updateDisplay(String value) {
     final clean = value.replaceAll(RegExp(r'[^\d]'), '');
-    if (clean.isNotEmpty) {
+    if (clean.isNotEmpty && widget.isPrice) {
       final num = double.tryParse(clean) ?? 0;
       setState(() {
         _tomanText = formatToman(num);
+        _wordsText = numberToTomanWords(num);
       });
     } else {
       setState(() {
         _tomanText = '';
+        _wordsText = '';
       });
     }
   }
@@ -140,23 +152,64 @@ class _NumberInputWithTomanState extends State<NumberInputWithToman> {
       children: [
         TextFormField(
           controller: _controller,
-          decoration: InputDecoration(labelText: widget.label),
+          decoration: InputDecoration(
+            labelText: widget.label,
+            labelStyle: TextStyle(fontFamily: 'Vazir'),
+          ),
           keyboardType: widget.keyboardType,
+          textAlign: TextAlign.right,
+          textDirection: TextDirection.rtl,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+            ThousandsSeparatorInputFormatter(),
           ],
           validator: widget.validator,
-          onSaved: (v) => widget.onSaved(v ?? ''),
+          onSaved: (v) {
+            // حذف کاماها و ارسال عدد خالص
+            final cleaned = v?.replaceAll(RegExp(r'[^\d]'), '') ?? '';
+            widget.onSaved(cleaned);
+          },
         ),
-        if (_tomanText.isNotEmpty)
+        if (_tomanText.isNotEmpty && widget.isPrice)
           Padding(
             padding: const EdgeInsets.only(top: 4.0, right: 8.0),
-            child: Text(
-              _tomanText,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _tomanText,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  textDirection: TextDirection.rtl,
+                ),
+                Text(
+                  _wordsText,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  textDirection: TextDirection.rtl,
+                ),
+              ],
             ),
           ),
       ],
+    );
+  }
+}
+
+/// فرمتر برای جدا کردن هزارگان هنگام تایپ
+class ThousandsSeparatorInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) return newValue;
+    // حذف کاماهای قبلی
+    final clean = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (clean.isEmpty) return newValue;
+    final intValue = int.tryParse(clean);
+    if (intValue == null) return newValue;
+    // فرمت با کاما
+    final formatted = NumberFormat('#,###').format(intValue);
+    return newValue.copyWith(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
@@ -328,7 +381,6 @@ class ApiService {
           high = high != null ? high * rialsMultiplier : null;
           low = low != null ? low * rialsMultiplier : null;
           yday = yday != null ? yday * rialsMultiplier : null;
-          // تغییرات (cVal) نیز قیمت است و باید ضرب شود
           if (cVal != null) cVal = cVal * rialsMultiplier;
         }
 
@@ -732,42 +784,49 @@ class GoldListScreen extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(existing == null ? 'افزودن طلای آب شده' : 'ویرایش'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  NumberInputWithToman(
-                    label: 'فی خرید (ریال)',
-                    initialValue: formatDoubleWithoutTrailingZeros(price),
-                    onSaved: (v) => price = double.parse(v),
-                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-                  ),
-                  TextFormField(
-                    initialValue: formatDoubleWithoutTrailingZeros(weight),
-                    decoration: InputDecoration(labelText: 'وزن (گرم)'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-                    onSaved: (v) => weight = double.parse(v!),
-                  ),
-                  ListTile(
-                    title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await pickJalaliDate(context, selectedDate);
-                      if (picked != null) {
-                        setState(() {
-                          selectedDate = picked;
-                        });
-                      }
-                    },
-                  ),
-                  TextFormField(
-                    initialValue: desc,
-                    decoration: InputDecoration(labelText: 'توضیحات'),
-                    onSaved: (v) => desc = v ?? '',
-                  ),
-                ],
+          content: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    NumberInputWithToman(
+                      label: 'فی خرید (ریال)',
+                      initialValue: formatDoubleWithoutTrailingZeros(price),
+                      onSaved: (v) => price = double.parse(v),
+                      validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                    ),
+                    TextFormField(
+                      initialValue: formatDoubleWithoutTrailingZeros(weight),
+                      decoration: InputDecoration(labelText: 'وزن (گرم)'),
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                      onSaved: (v) => weight = double.parse(v!),
+                    ),
+                    ListTile(
+                      title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
+                      trailing: Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await pickJalaliDate(context, selectedDate);
+                        if (picked != null) {
+                          setState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    TextFormField(
+                      initialValue: desc,
+                      decoration: InputDecoration(labelText: 'توضیحات'),
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      onSaved: (v) => desc = v ?? '',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -812,16 +871,30 @@ class GoldListScreen extends StatelessWidget {
     final qtyCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(lot.remainingQuantity));
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text('فروش طلا'),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('موجودی: ${formatDoubleWithoutTrailingZeros(lot.remainingQuantity)} گرم'),
-        TextField(controller: qtyCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'مقدار فروش (گرم)')),
-        TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'قیمت فروش هر گرم (ریال)')),
-      ]),
+      content: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('موجودی: ${formatDoubleWithoutTrailingZeros(lot.remainingQuantity)} گرم'),
+          TextField(
+            controller: qtyCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: 'مقدار فروش (گرم)'),
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+          ),
+          NumberInputWithToman(
+            label: 'قیمت فروش هر گرم (ریال)',
+            initialValue: priceCtrl.text,
+            onSaved: (v) => priceCtrl.text = v,
+            isPrice: true,
+          ),
+        ]),
+      ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
         ElevatedButton(onPressed: () {
           final q = double.tryParse(qtyCtrl.text) ?? 0;
-          final p = double.tryParse(priceCtrl.text) ?? 0;
+          final p = double.tryParse(priceCtrl.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
           if (q > 0 && q <= lot.remainingQuantity) {
             Provider.of<DataProvider>(context, listen: false).sellGold(lot, q, p);
             Navigator.pop(ctx);
@@ -911,54 +984,61 @@ class CoinListScreen extends StatelessWidget {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           title: Text(existing == null ? 'افزودن سکه' : 'ویرایش'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: coinType,
-                    items: [
-                      DropdownMenuItem(value: 'coin_new', child: Text('تمام (امامی)')),
-                      DropdownMenuItem(value: 'coin_old', child: Text('تمام (قدیم)')),
-                      DropdownMenuItem(value: 'coin_half', child: Text('نیم سکه')),
-                      DropdownMenuItem(value: 'coin_quarter', child: Text('ربع سکه')),
-                      DropdownMenuItem(value: 'coin_1g', child: Text('سکه یک گرمی')),
-                    ],
-                    onChanged: (v) => coinType = v!,
-                    decoration: InputDecoration(labelText: 'نوع سکه'),
-                  ),
-                  NumberInputWithToman(
-                    label: 'فی خرید (ریال)',
-                    initialValue: formatDoubleWithoutTrailingZeros(price),
-                    onSaved: (v) => price = double.parse(v),
-                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-                  ),
-                  TextFormField(
-                    initialValue: count.toString(),
-                    decoration: InputDecoration(labelText: 'تعداد'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-                    onSaved: (v) => count = int.parse(v!),
-                  ),
-                  ListTile(
-                    title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
-                    trailing: Icon(Icons.calendar_today),
-                    onTap: () async {
-                      final picked = await pickJalaliDate(context, selectedDate);
-                      if (picked != null) {
-                        setState(() {
-                          selectedDate = picked;
-                        });
-                      }
-                    },
-                  ),
-                  TextFormField(
-                    initialValue: desc,
-                    decoration: InputDecoration(labelText: 'توضیحات'),
-                    onSaved: (v) => desc = v ?? '',
-                  ),
-                ],
+          content: Directionality(
+            textDirection: TextDirection.rtl,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: coinType,
+                      items: [
+                        DropdownMenuItem(value: 'coin_new', child: Text('تمام (امامی)')),
+                        DropdownMenuItem(value: 'coin_old', child: Text('تمام (قدیم)')),
+                        DropdownMenuItem(value: 'coin_half', child: Text('نیم سکه')),
+                        DropdownMenuItem(value: 'coin_quarter', child: Text('ربع سکه')),
+                        DropdownMenuItem(value: 'coin_1g', child: Text('سکه یک گرمی')),
+                      ],
+                      onChanged: (v) => coinType = v!,
+                      decoration: InputDecoration(labelText: 'نوع سکه'),
+                    ),
+                    NumberInputWithToman(
+                      label: 'فی خرید (ریال)',
+                      initialValue: formatDoubleWithoutTrailingZeros(price),
+                      onSaved: (v) => price = double.parse(v),
+                      validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                    ),
+                    TextFormField(
+                      initialValue: count.toString(),
+                      decoration: InputDecoration(labelText: 'تعداد'),
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                      onSaved: (v) => count = int.parse(v!),
+                    ),
+                    ListTile(
+                      title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
+                      trailing: Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final picked = await pickJalaliDate(context, selectedDate);
+                        if (picked != null) {
+                          setState(() {
+                            selectedDate = picked;
+                          });
+                        }
+                      },
+                    ),
+                    TextFormField(
+                      initialValue: desc,
+                      decoration: InputDecoration(labelText: 'توضیحات'),
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
+                      onSaved: (v) => desc = v ?? '',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1004,16 +1084,30 @@ class CoinListScreen extends StatelessWidget {
     final cntCtrl = TextEditingController(text: lot.remainingCount.toString());
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text('فروش سکه'),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('موجودی: ${lot.remainingCount} عدد'),
-        TextField(controller: cntCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'تعداد فروش')),
-        TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'قیمت فروش هر عدد (ریال)')),
-      ]),
+      content: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('موجودی: ${lot.remainingCount} عدد'),
+          TextField(
+            controller: cntCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: 'تعداد فروش'),
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+          ),
+          NumberInputWithToman(
+            label: 'قیمت فروش هر عدد (ریال)',
+            initialValue: priceCtrl.text,
+            onSaved: (v) => priceCtrl.text = v,
+            isPrice: true,
+          ),
+        ]),
+      ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
         ElevatedButton(onPressed: () {
           final n = int.tryParse(cntCtrl.text) ?? 0;
-          final p = double.tryParse(priceCtrl.text) ?? 0;
+          final p = double.tryParse(priceCtrl.text.replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
           if (n > 0 && n <= lot.remainingCount) {
             Provider.of<DataProvider>(context, listen: false).sellCoin(lot, n, p);
             Navigator.pop(ctx);
@@ -1152,7 +1246,17 @@ class SettingsScreen extends StatelessWidget {
             initialValue: basePrices[key] == 0 ? '' : formatDoubleWithoutTrailingZeros(basePrices[key] ?? 0),
             keyboardType: TextInputType.number,
             decoration: InputDecoration(hintText: 'ریال', isDense: true),
-            onFieldSubmitted: (value) { final v = double.tryParse(value) ?? 0; basePriceProvider.setBasePrice(key, v); },
+            textAlign: TextAlign.right,
+            textDirection: TextDirection.rtl,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+              ThousandsSeparatorInputFormatter(),
+            ],
+            onFieldSubmitted: (value) {
+              final cleaned = value.replaceAll(RegExp(r'[^\d]'), '');
+              final v = double.tryParse(cleaned) ?? 0;
+              basePriceProvider.setBasePrice(key, v);
+            },
           )),
         ))),
         Card(child: ListTile(title: Text('نسخه ۲.۰.۰'), subtitle: Text('ساخته شده توسط امیر - بنیانگذار نخودگرام'))),
