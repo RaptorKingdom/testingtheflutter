@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart' show NumberFormat;
+import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -13,10 +13,10 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:html/parser.dart' as html_parser;
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:jalali_flutter_datepicker/jalali_flutter_datepicker.dart';
+import 'package:jalali_flutter_datepicker/jalali_flutter_datepicker.dart' hide Jalali;
 import 'package:auto_size_text/auto_size_text.dart';
 
-part 'main.g.dart'; // Hive generated file
+part 'main.g.dart';
 
 // -------------------- Models --------------------
 @HiveType(typeId: 0)
@@ -815,13 +815,13 @@ class GoldListScreen extends StatelessWidget {
                     title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
                     trailing: Icon(Icons.calendar_today),
                     onTap: () async {
-                      final picked = await JalaliFlutterDatePicker.show(
-                        context,
-                        initialDate: Jalali.fromDateTime(selectedDate),
-                        firstDate: Jalali(1400, 1, 1),
-                        lastDate: Jalali.now(),
+                      final picked = await showJalaliDatePicker(
+                        context: context,
+                        initialDate: selectedDate,
+                        firstDate: DateTime(2021, 3, 21),
+                        lastDate: DateTime.now(),
                       );
-                      if (picked != null) selectedDate = picked.toDateTime();
+                      if (picked != null) selectedDate = picked;
                     },
                   ),
                   TextFormField(
@@ -1046,13 +1046,13 @@ class CoinListScreen extends StatelessWidget {
                   title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
                   trailing: Icon(Icons.calendar_today),
                   onTap: () async {
-                    final picked = await JalaliFlutterDatePicker.show(
-                      context,
-                      initialDate: Jalali.fromDateTime(selectedDate),
-                      firstDate: Jalali(1400, 1, 1),
-                      lastDate: Jalali.now(),
+                    final picked = await showJalaliDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2021, 3, 21),
+                      lastDate: DateTime.now(),
                     );
-                    if (picked != null) selectedDate = picked.toDateTime();
+                    if (picked != null) selectedDate = picked;
                   },
                 ),
                 TextFormField(initialValue: desc, decoration: InputDecoration(labelText: 'توضیحات'), onSaved: (v) => desc = v ?? ''),
