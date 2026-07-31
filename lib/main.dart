@@ -13,7 +13,7 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:html/parser.dart' as html_parser;
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:datepicker_jalali/datepicker_jalali.dart';
+import 'package:persian_datepicker/persian_datepicker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 part 'main.g.dart'; // Hive generated file
@@ -30,11 +30,11 @@ class GoldTransaction extends HiveObject {
   @HiveField(3)
   double purchasePricePerUnit;
   @HiveField(4)
-  double quantity; // original quantity
+  double quantity;
   @HiveField(5)
   String description;
   @HiveField(6)
-  double remainingQuantity; // unsold grams
+  double remainingQuantity;
 
   GoldTransaction({
     required this.id,
@@ -58,11 +58,11 @@ class CoinTransaction extends HiveObject {
   @HiveField(3)
   double purchasePricePerUnit;
   @HiveField(4)
-  int count; // original count
+  int count;
   @HiveField(5)
   String description;
   @HiveField(6)
-  int remainingCount; // unsold coins
+  int remainingCount;
 
   CoinTransaction({
     required this.id,
@@ -80,17 +80,17 @@ class SaleTransaction extends HiveObject {
   @HiveField(0)
   String id;
   @HiveField(1)
-  String lotId; // ID of the GoldTransaction or CoinTransaction
+  String lotId;
   @HiveField(2)
   DateTime saleDate;
   @HiveField(3)
   double salePricePerUnit;
   @HiveField(4)
-  double quantity; // how many units sold (grams for gold, count for coins)
+  double quantity;
   @HiveField(5)
   bool isGold;
   @HiveField(6)
-  String? coinType; // only relevant if isGold == false
+  String? coinType;
 
   SaleTransaction({
     required this.id,
@@ -103,7 +103,7 @@ class SaleTransaction extends HiveObject {
   });
 }
 
-// -------------------- Price Models (unchanged) --------------------
+// -------------------- Price Models --------------------
 class PriceResponse {
   final String name;
   final double? currentPrice;
@@ -149,7 +149,7 @@ class Change {
   }
 }
 
-// -------------------- API Service (unchanged scraping) --------------------
+// -------------------- API Service --------------------
 class ApiService {
   static const String _pageUrl = 'https://www.estjt.ir/price/';
   static const Map<String, String> _nameToKey = {
@@ -444,7 +444,6 @@ class DataProvider extends ChangeNotifier {
   }
 
   void _addDefaultData() {
-    // Add default gold & coin records (unchanged from original, but set remaining = quantity)
     goldBox.addAll([
       GoldTransaction(id: '1', type: 'gold_18', purchaseDate: DateTime(2025,1,2), purchasePricePerUnit: 52518583, quantity: 100, description: ''),
       GoldTransaction(id: '2', type: 'gold_18', purchaseDate: DateTime(2025,2,9), purchasePricePerUnit: 65792511, quantity: 61.195, description: ''),
@@ -468,41 +467,16 @@ class DataProvider extends ChangeNotifier {
     ]);
   }
 
-  // Active gold lots (remaining > 0)
   List<GoldTransaction> get activeGold => goldBox.values.where((g) => g.remainingQuantity > 0).toList();
   List<CoinTransaction> get activeCoins => coinBox.values.where((c) => c.remainingCount > 0).toList();
 
-  Future<void> addGold(GoldTransaction t) async {
-    await goldBox.add(t);
-    notifyListeners();
-  }
+  Future<void> addGold(GoldTransaction t) async { await goldBox.add(t); notifyListeners(); }
+  Future<void> updateGold(GoldTransaction t) async { await t.save(); notifyListeners(); }
+  Future<void> deleteGold(GoldTransaction t) async { await t.delete(); notifyListeners(); }
+  Future<void> addCoin(CoinTransaction t) async { await coinBox.add(t); notifyListeners(); }
+  Future<void> updateCoin(CoinTransaction t) async { await t.save(); notifyListeners(); }
+  Future<void> deleteCoin(CoinTransaction t) async { await t.delete(); notifyListeners(); }
 
-  Future<void> updateGold(GoldTransaction t) async {
-    await t.save();
-    notifyListeners();
-  }
-
-  Future<void> deleteGold(GoldTransaction t) async {
-    await t.delete();
-    notifyListeners();
-  }
-
-  Future<void> addCoin(CoinTransaction t) async {
-    await coinBox.add(t);
-    notifyListeners();
-  }
-
-  Future<void> updateCoin(CoinTransaction t) async {
-    await t.save();
-    notifyListeners();
-  }
-
-  Future<void> deleteCoin(CoinTransaction t) async {
-    await t.delete();
-    notifyListeners();
-  }
-
-  // Sell part of a gold lot
   Future<void> sellGold(GoldTransaction lot, double quantity, double pricePerUnit) async {
     if (quantity <= 0 || quantity > lot.remainingQuantity) return;
     lot.remainingQuantity -= quantity;
@@ -515,15 +489,11 @@ class DataProvider extends ChangeNotifier {
       isGold: true,
     );
     await saleBox.add(sale);
-    if (lot.remainingQuantity <= 0.0001) {
-      await lot.delete();
-    } else {
-      await lot.save();
-    }
+    if (lot.remainingQuantity <= 0.0001) await lot.delete();
+    else await lot.save();
     notifyListeners();
   }
 
-  // Sell part of a coin lot
   Future<void> sellCoin(CoinTransaction lot, int count, double pricePerUnit) async {
     if (count <= 0 || count > lot.remainingCount) return;
     lot.remainingCount -= count;
@@ -537,15 +507,11 @@ class DataProvider extends ChangeNotifier {
       coinType: lot.coinType,
     );
     await saleBox.add(sale);
-    if (lot.remainingCount == 0) {
-      await lot.delete();
-    } else {
-      await lot.save();
-    }
+    if (lot.remainingCount == 0) await lot.delete();
+    else await lot.save();
     notifyListeners();
   }
 
-  // Total realized profit from all sales
   double get totalRealizedProfit {
     double profit = 0;
     for (var sale in saleBox.values) {
@@ -576,7 +542,6 @@ class HomeScreen extends StatelessWidget {
     final DateTime startOf1405 = DateTime(2026, 3, 21);
     final DateTime endOf1404 = DateTime(2026, 3, 20);
 
-    // Calculate total current values and unrealized profit
     double totalGoldValue = 0, totalGoldCost = 0;
     double totalCoinValue = 0, totalCoinCost = 0;
     for (var g in dataProvider.activeGold) {
@@ -594,7 +559,6 @@ class HomeScreen extends StatelessWidget {
     final unrealizedProfit = totalAssets - (totalGoldCost + totalCoinCost);
     final realizedProfit = dataProvider.totalRealizedProfit;
 
-    // Profit from start of 1405 using base prices
     double base1405Cost = 0;
     for (var g in dataProvider.activeGold) {
       base1405Cost += (basePrices[g.type] ?? 0) * g.remainingQuantity;
@@ -606,14 +570,13 @@ class HomeScreen extends StatelessWidget {
     final bankInterestCost = base1405Cost * settings.bankInterestRate * days1405 / 36500;
     final profitFrom1405 = totalAssets - base1405Cost - bankInterestCost;
 
-    // Realized profit for 1404 (unchanged logic)
     double realized1404 = 0;
-    for (var g in goldBoxValues(dataProvider.goldBox)) {
+    for (var g in dataProvider.goldBox.values) {
       if (g.purchaseDate.isAfter(endOf1404)) continue;
       final endPrice = basePrices[g.type] ?? 0;
-      realized1404 += (endPrice - g.purchasePricePerUnit) * g.quantity; // using original quantity
+      realized1404 += (endPrice - g.purchasePricePerUnit) * g.quantity;
     }
-    for (var c in coinBoxValues(dataProvider.coinBox)) {
+    for (var c in dataProvider.coinBox.values) {
       if (c.purchaseDate.isAfter(endOf1404)) continue;
       final endPrice = basePrices[c.coinType] ?? 0;
       realized1404 += (endPrice - c.purchasePricePerUnit) * c.count;
@@ -714,9 +677,6 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  List<GoldTransaction> goldBoxValues(Box<GoldTransaction> box) => box.values.toList();
-  List<CoinTransaction> coinBoxValues(Box<CoinTransaction> box) => box.values.toList();
 }
 
 class GoldListScreen extends StatelessWidget {
@@ -724,7 +684,6 @@ class GoldListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
-    final settings = Provider.of<SettingsProvider>(context);
 
     final activeGold = dataProvider.activeGold;
     double totalWeight = activeGold.fold(0, (sum, g) => sum + g.remainingQuantity);
@@ -856,7 +815,10 @@ class GoldListScreen extends StatelessWidget {
                     title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
                     trailing: Icon(Icons.calendar_today),
                     onTap: () async {
-                      final picked = await JalaliPicker.showPicker(context, initialDate: Jalali.fromDateTime(selectedDate));
+                      final picked = await PersianDatePicker.showDialog(
+                        context: context,
+                        initialDate: Jalali.fromDateTime(selectedDate),
+                      );
                       if (picked != null) selectedDate = picked.toDateTime();
                     },
                   ),
@@ -889,7 +851,7 @@ class GoldListScreen extends StatelessWidget {
                     existing.purchaseDate = selectedDate;
                     existing.purchasePricePerUnit = price;
                     existing.quantity = weight;
-                    existing.remainingQuantity = weight; // reset remaining to full
+                    existing.remainingQuantity = weight;
                     existing.description = desc;
                     Provider.of<DataProvider>(context, listen: false).updateGold(existing);
                   }
@@ -943,7 +905,6 @@ class CoinListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
-    final settings = Provider.of<SettingsProvider>(context);
 
     final activeCoins = dataProvider.activeCoins;
     int totalCoins = activeCoins.fold(0, (sum, c) => sum + c.remainingCount);
@@ -1083,7 +1044,10 @@ class CoinListScreen extends StatelessWidget {
                   title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
                   trailing: Icon(Icons.calendar_today),
                   onTap: () async {
-                    final picked = await JalaliPicker.showPicker(context, initialDate: Jalali.fromDateTime(selectedDate));
+                    final picked = await PersianDatePicker.showDialog(
+                      context: context,
+                      initialDate: Jalali.fromDateTime(selectedDate),
+                    );
                     if (picked != null) selectedDate = picked.toDateTime();
                   },
                 ),
@@ -1166,12 +1130,10 @@ class ChartsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
-    final settings = Provider.of<SettingsProvider>(context);
 
     final activeGold = dataProvider.activeGold;
     final activeCoins = dataProvider.activeCoins;
 
-    // Pie data
     double goldValue = activeGold.fold(0, (s, g) => s + (priceProvider.prices[g.type]?.currentPrice ?? 0) * g.remainingQuantity);
     Map<String, double> coinTypeValues = {};
     for (var c in activeCoins) {
@@ -1185,7 +1147,6 @@ class ChartsScreen extends StatelessWidget {
       sections.add(PieChartSectionData(value: e.value, title: '${coinName(e.key)}\n${(e.value/total*100).toStringAsFixed(1)}%', color: _coinColor(e.key), radius: 50, titleStyle: TextStyle(fontSize: 9, color: Colors.white)));
     }
 
-    // Bar data (profit/loss per lot)
     List<BarChartGroupData> bars = [];
     int x = 0;
     for (var g in activeGold) {
@@ -1199,9 +1160,8 @@ class ChartsScreen extends StatelessWidget {
       bars.add(BarChartGroupData(x: x++, barRods: [BarChartRodData(toY: profit, color: profit>=0?Colors.green:Colors.red, width: 10)]));
     }
 
-    // Line chart: cumulative invested cost over time + current total value
     final allLots = <_Lot>[];
-    for (var g in activeGold) allLots.add(_Lot(g.purchaseDate, g.purchasePricePerUnit * g.quantity)); // full original cost
+    for (var g in activeGold) allLots.add(_Lot(g.purchaseDate, g.purchasePricePerUnit * g.quantity));
     for (var c in activeCoins) allLots.add(_Lot(c.purchaseDate, c.purchasePricePerUnit * c.count.toDouble()));
     allLots.sort((a, b) => a.date.compareTo(b.date));
     List<FlSpot> spots = [];
@@ -1210,7 +1170,6 @@ class ChartsScreen extends StatelessWidget {
       cumulative += lot.cost;
       spots.add(FlSpot(lot.date.millisecondsSinceEpoch.toDouble(), cumulative));
     }
-    // add current total value at today
     spots.add(FlSpot(DateTime.now().millisecondsSinceEpoch.toDouble(), total));
 
     return Scaffold(
