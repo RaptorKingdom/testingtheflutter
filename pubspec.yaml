@@ -19,7 +19,6 @@ dependencies:
   path_provider:
   html:
   shamsi_date:
-  jalali_flutter_datepicker:
   auto_size_text:
 
 dev_dependencies:
