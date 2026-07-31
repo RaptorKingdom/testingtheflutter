@@ -970,7 +970,7 @@ class SettingsScreen extends StatelessWidget {
         ...basePrices.keys.map((key) => Card(child: ListTile(
           title: Text(goldTypeName(key)),
           trailing: SizedBox(width: 120, child: TextFormField(
-            initialValue: basePrices[key] == 0 ? '' : formatDoubleWithoutTrailingZeros(basePrices[key]),
+            initialValue: basePrices[key] == 0 ? '' : formatDoubleWithoutTrailingZeros(basePrices[key] ?? 0),
             keyboardType: TextInputType.number,
             decoration: InputDecoration(hintText: 'ریال', isDense: true),
             onFieldSubmitted: (value) { final v = double.tryParse(value) ?? 0; basePriceProvider.setBasePrice(key, v); },
