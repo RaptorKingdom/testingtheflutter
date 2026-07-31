@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -30,7 +31,13 @@ String formatDoubleWithoutTrailingZeros(double value) {
   if (value == value.roundToDouble()) {
     return value.round().toString();
   } else {
-    return value.toString();
+    // حذف صفرهای اضافی انتهایی
+    String str = value.toString();
+    if (str.contains('.')) {
+      str = str.replaceAll(RegExp(r'0*$'), '');
+      if (str.endsWith('.')) str = str.substring(0, str.length - 1);
+    }
+    return str;
   }
 }
 
@@ -56,7 +63,102 @@ String goldTypeName(String k) {
     case 'gold_24': return 'طلای ۲۴ عیار';
     case 'gold_ons': return 'انس طلا';
     case 'gold_mazneh': return 'مظنه تهران';
+    case 'coin_old': return 'سکه قدیم';
+    case 'coin_new': return 'سکه جدید';
+    case 'coin_half': return 'نیم سکه';
+    case 'coin_quarter': return 'ربع سکه';
+    case 'coin_1g': return 'سکه یک گرمی';
     default: return k;
+  }
+}
+
+/// تبدیل عدد به تومان (با جداکننده و پسوند)
+String formatToman(double amount) {
+  final toman = amount / 10;
+  final formatted = NumberFormat('#,###').format(toman);
+  return '${formatted.toPersianDigit()} تومان';
+}
+
+/// ویجت ورودی عدد با نمایش تومانی زیر آن
+class NumberInputWithToman extends StatefulWidget {
+  final String label;
+  final String? initialValue;
+  final ValueChanged<String> onSaved;
+  final TextInputType keyboardType;
+  final FormFieldValidator<String>? validator;
+
+  const NumberInputWithToman({
+    Key? key,
+    required this.label,
+    this.initialValue,
+    required this.onSaved,
+    this.keyboardType = TextInputType.number,
+    this.validator,
+  }) : super(key: key);
+
+  @override
+  _NumberInputWithTomanState createState() => _NumberInputWithTomanState();
+}
+
+class _NumberInputWithTomanState extends State<NumberInputWithToman> {
+  late TextEditingController _controller;
+  String _tomanText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue ?? '');
+    _updateToman(_controller.text);
+    _controller.addListener(() {
+      _updateToman(_controller.text);
+    });
+  }
+
+  void _updateToman(String value) {
+    final clean = value.replaceAll(RegExp(r'[^\d]'), '');
+    if (clean.isNotEmpty) {
+      final num = double.tryParse(clean) ?? 0;
+      setState(() {
+        _tomanText = formatToman(num);
+      });
+    } else {
+      setState(() {
+        _tomanText = '';
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _controller,
+          decoration: InputDecoration(labelText: widget.label),
+          keyboardType: widget.keyboardType,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+          ],
+          validator: widget.validator,
+          onSaved: (v) => widget.onSaved(v ?? ''),
+        ),
+        if (_tomanText.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0, right: 8.0),
+            child: Text(
+              _tomanText,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
+          ),
+      ],
+    );
   }
 }
 
@@ -64,7 +166,7 @@ Future<DateTime?> pickJalaliDate(BuildContext context, DateTime initial) async {
   final picked = await showPersianDatePicker(
     context: context,
     initialDate: initial,
-    firstDate: DateTime(1400, 1, 1),
+    firstDate: DateTime(1370, 1, 1), // از سال ۱۳۷۰
     lastDate: DateTime.now(),
   );
   return picked;
@@ -551,7 +653,7 @@ class GoldListScreen extends StatelessWidget {
         Card(
           margin: EdgeInsets.all(8),
           child: Padding(padding: EdgeInsets.all(12), child: Row(children: [
-            Expanded(child: _statColumn('وزن کل', '${totalWeight.toStringAsFixed(3)} گرم')),
+            Expanded(child: _statColumn('وزن کل', '${formatDoubleWithoutTrailingZeros(totalWeight)} گرم')),
             Expanded(child: _statColumn('مبلغ پرداختی', formatRial(totalPaid))),
           ])),
         ),
@@ -569,7 +671,7 @@ class GoldListScreen extends StatelessWidget {
                 child: Card(
                   margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
-                    title: AutoSizeText('${g.remainingQuantity.toStringAsFixed(3)} گرم (اصلی: ${g.quantity.toStringAsFixed(3)})'),
+                    title: AutoSizeText('${formatDoubleWithoutTrailingZeros(g.remainingQuantity)} گرم (اصلی: ${formatDoubleWithoutTrailingZeros(g.quantity)})'),
                     subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       AutoSizeText('فی خرید: ${formatRial(g.purchasePricePerUnit)}', maxLines: 1),
                       AutoSizeText('ارزش فعلی: ${formatRial(currentValue)}', maxLines: 1),
@@ -611,64 +713,93 @@ class GoldListScreen extends StatelessWidget {
     double weight = existing?.quantity ?? 0;
     String desc = existing?.description ?? '';
 
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: Text(existing == null ? 'افزودن طلای آب شده' : 'ویرایش'),
-      content: Form(key: formKey, child: SingleChildScrollView(child: Column(children: [
-        TextFormField(
-          initialValue: formatDoubleWithoutTrailingZeros(price),
-          decoration: InputDecoration(labelText: 'فی خرید (ریال)'),
-          keyboardType: TextInputType.number,
-          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-          onSaved: (v) => price = double.parse(v!),
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(existing == null ? 'افزودن طلای آب شده' : 'ویرایش'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  NumberInputWithToman(
+                    label: 'فی خرید (ریال)',
+                    initialValue: formatDoubleWithoutTrailingZeros(price),
+                    onSaved: (v) => price = double.parse(v),
+                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                  ),
+                  TextFormField(
+                    initialValue: formatDoubleWithoutTrailingZeros(weight),
+                    decoration: InputDecoration(labelText: 'وزن (گرم)'),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                    onSaved: (v) => weight = double.parse(v!),
+                  ),
+                  ListTile(
+                    title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
+                    trailing: Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await pickJalaliDate(context, selectedDate);
+                      if (picked != null) {
+                        setState(() {
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                  TextFormField(
+                    initialValue: desc,
+                    decoration: InputDecoration(labelText: 'توضیحات'),
+                    onSaved: (v) => desc = v ?? '',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
+                  if (existing == null) {
+                    Provider.of<DataProvider>(context, listen: false).addGold(GoldTransaction(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      type: 'gold_18',
+                      purchaseDate: selectedDate,
+                      purchasePricePerUnit: price,
+                      quantity: weight,
+                      description: desc,
+                    ));
+                  } else {
+                    existing.purchaseDate = selectedDate;
+                    existing.purchasePricePerUnit = price;
+                    existing.quantity = weight;
+                    existing.remainingQuantity = weight;
+                    existing.description = desc;
+                    Provider.of<DataProvider>(context, listen: false).updateGold(existing);
+                  }
+                  Navigator.pop(ctx);
+                }
+              },
+              child: Text('ذخیره'),
+            ),
+          ],
         ),
-        TextFormField(
-          initialValue: formatDoubleWithoutTrailingZeros(weight),
-          decoration: InputDecoration(labelText: 'وزن (گرم)'),
-          keyboardType: TextInputType.number,
-          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-          onSaved: (v) => weight = double.parse(v!),
-        ),
-        ListTile(
-          title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
-          trailing: Icon(Icons.calendar_today),
-          onTap: () async {
-            final picked = await pickJalaliDate(context, selectedDate);
-            if (picked != null) selectedDate = picked;
-          },
-        ),
-        TextFormField(initialValue: desc, decoration: InputDecoration(labelText: 'توضیحات'), onSaved: (v) => desc = v ?? ''),
-      ]))),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
-        ElevatedButton(onPressed: () {
-          if (formKey.currentState!.validate()) {
-            formKey.currentState!.save();
-            if (existing == null) {
-              Provider.of<DataProvider>(context, listen: false).addGold(GoldTransaction(
-                id: DateTime.now().millisecondsSinceEpoch.toString(), type: 'gold_18',
-                purchaseDate: selectedDate, purchasePricePerUnit: price, quantity: weight, description: desc,
-              ));
-            } else {
-              existing.purchaseDate = selectedDate; existing.purchasePricePerUnit = price;
-              existing.quantity = weight; existing.remainingQuantity = weight; existing.description = desc;
-              Provider.of<DataProvider>(context, listen: false).updateGold(existing);
-            }
-            Navigator.pop(ctx);
-          }
-        }, child: Text('ذخیره')),
-      ],
-    ));
+      ),
+    );
   }
 
   void _showSellGoldDialog(BuildContext context, GoldTransaction lot) {
     final priceCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(
       Provider.of<PriceProvider>(context, listen: false).prices[lot.type]?.currentPrice ?? 0
     ));
-    final qtyCtrl = TextEditingController(text: lot.remainingQuantity.toStringAsFixed(3));
+    final qtyCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(lot.remainingQuantity));
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text('فروش طلا'),
       content: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('موجودی: ${lot.remainingQuantity.toStringAsFixed(3)} گرم'),
+        Text('موجودی: ${formatDoubleWithoutTrailingZeros(lot.remainingQuantity)} گرم'),
         TextField(controller: qtyCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'مقدار فروش (گرم)')),
         TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'قیمت فروش هر گرم (ریال)')),
       ]),
@@ -761,61 +892,95 @@ class CoinListScreen extends StatelessWidget {
     String desc = existing?.description ?? '';
     String coinType = existing?.coinType ?? 'coin_new';
 
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      title: Text(existing == null ? 'افزودن سکه' : 'ویرایش'),
-      content: Form(key: formKey, child: SingleChildScrollView(child: Column(children: [
-        DropdownButtonFormField<String>(value: coinType, items: [
-          DropdownMenuItem(value: 'coin_new', child: Text('تمام (امامی)')),
-          DropdownMenuItem(value: 'coin_old', child: Text('تمام (قدیم)')),
-          DropdownMenuItem(value: 'coin_half', child: Text('نیم سکه')),
-          DropdownMenuItem(value: 'coin_quarter', child: Text('ربع سکه')),
-          DropdownMenuItem(value: 'coin_1g', child: Text('سکه یک گرمی')),
-        ], onChanged: (v) => coinType = v!, decoration: InputDecoration(labelText: 'نوع سکه')),
-        TextFormField(
-          initialValue: formatDoubleWithoutTrailingZeros(price),
-          decoration: InputDecoration(labelText: 'فی خرید (ریال)'),
-          keyboardType: TextInputType.number,
-          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-          onSaved: (v) => price = double.parse(v!),
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(existing == null ? 'افزودن سکه' : 'ویرایش'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: coinType,
+                    items: [
+                      DropdownMenuItem(value: 'coin_new', child: Text('تمام (امامی)')),
+                      DropdownMenuItem(value: 'coin_old', child: Text('تمام (قدیم)')),
+                      DropdownMenuItem(value: 'coin_half', child: Text('نیم سکه')),
+                      DropdownMenuItem(value: 'coin_quarter', child: Text('ربع سکه')),
+                      DropdownMenuItem(value: 'coin_1g', child: Text('سکه یک گرمی')),
+                    ],
+                    onChanged: (v) => coinType = v!,
+                    decoration: InputDecoration(labelText: 'نوع سکه'),
+                  ),
+                  NumberInputWithToman(
+                    label: 'فی خرید (ریال)',
+                    initialValue: formatDoubleWithoutTrailingZeros(price),
+                    onSaved: (v) => price = double.parse(v),
+                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                  ),
+                  TextFormField(
+                    initialValue: count.toString(),
+                    decoration: InputDecoration(labelText: 'تعداد'),
+                    keyboardType: TextInputType.number,
+                    validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+                    onSaved: (v) => count = int.parse(v!),
+                  ),
+                  ListTile(
+                    title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
+                    trailing: Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await pickJalaliDate(context, selectedDate);
+                      if (picked != null) {
+                        setState(() {
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                  TextFormField(
+                    initialValue: desc,
+                    decoration: InputDecoration(labelText: 'توضیحات'),
+                    onSaved: (v) => desc = v ?? '',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
+                  if (existing == null) {
+                    Provider.of<DataProvider>(context, listen: false).addCoin(CoinTransaction(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      coinType: coinType,
+                      purchaseDate: selectedDate,
+                      purchasePricePerUnit: price,
+                      count: count,
+                      description: desc,
+                    ));
+                  } else {
+                    existing.coinType = coinType;
+                    existing.purchaseDate = selectedDate;
+                    existing.purchasePricePerUnit = price;
+                    existing.count = count;
+                    existing.remainingCount = count;
+                    existing.description = desc;
+                    Provider.of<DataProvider>(context, listen: false).updateCoin(existing);
+                  }
+                  Navigator.pop(ctx);
+                }
+              },
+              child: Text('ذخیره'),
+            ),
+          ],
         ),
-        TextFormField(
-          initialValue: count.toString(),
-          decoration: InputDecoration(labelText: 'تعداد'),
-          keyboardType: TextInputType.number,
-          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
-          onSaved: (v) => count = int.parse(v!),
-        ),
-        ListTile(
-          title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
-          trailing: Icon(Icons.calendar_today),
-          onTap: () async {
-            final picked = await pickJalaliDate(context, selectedDate);
-            if (picked != null) selectedDate = picked;
-          },
-        ),
-        TextFormField(initialValue: desc, decoration: InputDecoration(labelText: 'توضیحات'), onSaved: (v) => desc = v ?? ''),
-      ]))),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
-        ElevatedButton(onPressed: () {
-          if (formKey.currentState!.validate()) {
-            formKey.currentState!.save();
-            if (existing == null) {
-              Provider.of<DataProvider>(context, listen: false).addCoin(CoinTransaction(
-                id: DateTime.now().millisecondsSinceEpoch.toString(), coinType: coinType,
-                purchaseDate: selectedDate, purchasePricePerUnit: price, count: count, description: desc,
-              ));
-            } else {
-              existing.coinType = coinType; existing.purchaseDate = selectedDate;
-              existing.purchasePricePerUnit = price; existing.count = count; existing.remainingCount = count;
-              existing.description = desc;
-              Provider.of<DataProvider>(context, listen: false).updateCoin(existing);
-            }
-            Navigator.pop(ctx);
-          }
-        }, child: Text('ذخیره')),
-      ],
-    ));
+      ),
+    );
   }
 
   void _showSellCoinDialog(BuildContext context, CoinTransaction lot) {
