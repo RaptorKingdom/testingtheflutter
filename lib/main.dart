@@ -15,8 +15,60 @@ import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:html/parser.dart' as html_parser;
 import 'package:shamsi_date/shamsi_date.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:persian_datetimepickers/persian_datetimepickers.dart';
+import 'package:persian_number_utility/persian_number_utility.dart';
 
 part 'main.g.dart';
+
+// -------------------- Helpers --------------------
+String formatRial(double amount) {
+  final formatted = NumberFormat('#,###').format(amount);
+  return formatted.toPersianDigit();
+}
+
+String formatDoubleWithoutTrailingZeros(double value) {
+  if (value == value.roundToDouble()) {
+    return value.round().toString();
+  } else {
+    return value.toString();
+  }
+}
+
+String formatJalaliDate(DateTime dt) {
+  final j = Jalali.fromDateTime(dt);
+  return '${j.year}/${j.month.toString().padLeft(2,'0')}/${j.day.toString().padLeft(2,'0')}';
+}
+
+String coinName(String t) {
+  switch(t) {
+    case 'coin_new': return 'سکه تمام (امامی)';
+    case 'coin_old': return 'سکه تمام (قدیم)';
+    case 'coin_half': return 'نیم سکه';
+    case 'coin_quarter': return 'ربع سکه';
+    case 'coin_1g': return 'سکه یک گرمی';
+    default: return t;
+  }
+}
+
+String goldTypeName(String k) {
+  switch(k) {
+    case 'gold_18': return 'طلای ۱۸ عیار';
+    case 'gold_24': return 'طلای ۲۴ عیار';
+    case 'gold_ons': return 'انس طلا';
+    case 'gold_mazneh': return 'مظنه تهران';
+    default: return k;
+  }
+}
+
+Future<DateTime?> pickJalaliDate(BuildContext context, DateTime initial) async {
+  final picked = await showPersianDatePicker(
+    context: context,
+    initialDate: initial,
+    firstDate: DateTime(1400, 1, 1),
+    lastDate: DateTime.now(),
+  );
+  return picked;
+}
 
 // -------------------- Models --------------------
 @HiveType(typeId: 0)
@@ -176,47 +228,6 @@ class ApiService {
       return prices;
     } catch (_) { return {}; }
   }
-}
-
-// -------------------- Utilities --------------------
-String formatRial(double amount) {
-  return NumberFormat('#,###', 'fa').format(amount);
-}
-String formatJalaliDate(DateTime dt) {
-  final j = Jalali.fromDateTime(dt);
-  return '${j.year}/${j.month.toString().padLeft(2,'0')}/${j.day.toString().padLeft(2,'0')}';
-}
-String coinName(String t) {
-  switch(t) {
-    case 'coin_new': return 'سکه تمام (امامی)';
-    case 'coin_old': return 'سکه تمام (قدیم)';
-    case 'coin_half': return 'نیم سکه';
-    case 'coin_quarter': return 'ربع سکه';
-    case 'coin_1g': return 'سکه یک گرمی';
-    default: return t;
-  }
-}
-String goldTypeName(String k) {
-  switch(k) {
-    case 'gold_18': return 'طلای ۱۸ عیار';
-    case 'gold_24': return 'طلای ۲۴ عیار';
-    case 'gold_ons': return 'انس طلا';
-    case 'gold_mazneh': return 'مظنه تهران';
-    default: return k;
-  }
-}
-
-Future<DateTime?> pickJalaliDate(BuildContext context, DateTime initial) async {
-  final first = Jalali(1400, 1, 1).toDateTime();
-  final last = Jalali.now().toDateTime();
-  final picked = await showDatePicker(
-    context: context,
-    initialDate: initial,
-    firstDate: first,
-    lastDate: last,
-    locale: const Locale('fa'),
-  );
-  return picked;
 }
 
 // -------------------- Providers --------------------
@@ -563,7 +574,13 @@ class GoldListScreen extends StatelessWidget {
                       AutoSizeText('فی خرید: ${formatRial(g.purchasePricePerUnit)}', maxLines: 1),
                       AutoSizeText('ارزش فعلی: ${formatRial(currentValue)}', maxLines: 1),
                       AutoSizeText('سود خالص: ${formatRial(profit)}', style: TextStyle(color: profit >= 0 ? Colors.green : Colors.red)),
-                      if (g.description.isNotEmpty) AutoSizeText(g.description, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      if (g.description.isNotEmpty)
+                        AutoSizeText(
+                          g.description,
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          maxLines: 2,
+                          minFontSize: 10,
+                        ),
                     ]),
                     trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                       IconButton(icon: Icon(Icons.attach_money, color: Colors.red), tooltip: 'فروش', onPressed: () => _showSellGoldDialog(context, g)),
@@ -597,8 +614,20 @@ class GoldListScreen extends StatelessWidget {
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text(existing == null ? 'افزودن طلای آب شده' : 'ویرایش'),
       content: Form(key: formKey, child: SingleChildScrollView(child: Column(children: [
-        TextFormField(initialValue: price.toString(), decoration: InputDecoration(labelText: 'فی خرید (ریال)'), keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'وارد کنید' : null, onSaved: (v) => price = double.parse(v!)),
-        TextFormField(initialValue: weight.toString(), decoration: InputDecoration(labelText: 'وزن (گرم)'), keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'وارد کنید' : null, onSaved: (v) => weight = double.parse(v!)),
+        TextFormField(
+          initialValue: formatDoubleWithoutTrailingZeros(price),
+          decoration: InputDecoration(labelText: 'فی خرید (ریال)'),
+          keyboardType: TextInputType.number,
+          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+          onSaved: (v) => price = double.parse(v!),
+        ),
+        TextFormField(
+          initialValue: formatDoubleWithoutTrailingZeros(weight),
+          decoration: InputDecoration(labelText: 'وزن (گرم)'),
+          keyboardType: TextInputType.number,
+          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+          onSaved: (v) => weight = double.parse(v!),
+        ),
         ListTile(
           title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
           trailing: Icon(Icons.calendar_today),
@@ -632,7 +661,9 @@ class GoldListScreen extends StatelessWidget {
   }
 
   void _showSellGoldDialog(BuildContext context, GoldTransaction lot) {
-    final priceCtrl = TextEditingController(text: (Provider.of<PriceProvider>(context, listen: false).prices[lot.type]?.currentPrice ?? 0).toStringAsFixed(0));
+    final priceCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(
+      Provider.of<PriceProvider>(context, listen: false).prices[lot.type]?.currentPrice ?? 0
+    ));
     final qtyCtrl = TextEditingController(text: lot.remainingQuantity.toStringAsFixed(3));
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text('فروش طلا'),
@@ -740,8 +771,20 @@ class CoinListScreen extends StatelessWidget {
           DropdownMenuItem(value: 'coin_quarter', child: Text('ربع سکه')),
           DropdownMenuItem(value: 'coin_1g', child: Text('سکه یک گرمی')),
         ], onChanged: (v) => coinType = v!, decoration: InputDecoration(labelText: 'نوع سکه')),
-        TextFormField(initialValue: price.toString(), decoration: InputDecoration(labelText: 'فی خرید (ریال)'), keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'وارد کنید' : null, onSaved: (v) => price = double.parse(v!)),
-        TextFormField(initialValue: count.toString(), decoration: InputDecoration(labelText: 'تعداد'), keyboardType: TextInputType.number, validator: (v) => v!.isEmpty ? 'وارد کنید' : null, onSaved: (v) => count = int.parse(v!)),
+        TextFormField(
+          initialValue: formatDoubleWithoutTrailingZeros(price),
+          decoration: InputDecoration(labelText: 'فی خرید (ریال)'),
+          keyboardType: TextInputType.number,
+          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+          onSaved: (v) => price = double.parse(v!),
+        ),
+        TextFormField(
+          initialValue: count.toString(),
+          decoration: InputDecoration(labelText: 'تعداد'),
+          keyboardType: TextInputType.number,
+          validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
+          onSaved: (v) => count = int.parse(v!),
+        ),
         ListTile(
           title: Text('تاریخ خرید: ${formatJalaliDate(selectedDate)}'),
           trailing: Icon(Icons.calendar_today),
@@ -776,7 +819,9 @@ class CoinListScreen extends StatelessWidget {
   }
 
   void _showSellCoinDialog(BuildContext context, CoinTransaction lot) {
-    final priceCtrl = TextEditingController(text: (Provider.of<PriceProvider>(context, listen: false).prices[lot.coinType]?.currentPrice ?? 0).toStringAsFixed(0));
+    final priceCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(
+      Provider.of<PriceProvider>(context, listen: false).prices[lot.coinType]?.currentPrice ?? 0
+    ));
     final cntCtrl = TextEditingController(text: lot.remainingCount.toString());
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text('فروش سکه'),
@@ -925,7 +970,7 @@ class SettingsScreen extends StatelessWidget {
         ...basePrices.keys.map((key) => Card(child: ListTile(
           title: Text(goldTypeName(key)),
           trailing: SizedBox(width: 120, child: TextFormField(
-            initialValue: basePrices[key] == 0 ? '' : basePrices[key].toString(),
+            initialValue: basePrices[key] == 0 ? '' : formatDoubleWithoutTrailingZeros(basePrices[key]),
             keyboardType: TextInputType.number,
             decoration: InputDecoration(hintText: 'ریال', isDense: true),
             onFieldSubmitted: (value) { final v = double.tryParse(value) ?? 0; basePriceProvider.setBasePrice(key, v); },
