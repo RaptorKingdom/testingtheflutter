@@ -81,8 +81,9 @@ String formatToman(double amount) {
 /// تبدیل عدد به حروف تومان
 String numberToTomanWords(double amount) {
   final toman = amount / 10;
-  // استفاده از پکیج persian_number_utility برای تبدیل به حروف
-  return toman.toPersianWords().toPersianDigit() + ' تومان';
+  final intValue = toman.round();
+  final words = intValue.toPersianWords();
+  return words.toPersianDigit() + ' تومان';
 }
 
 /// ویجت ورودی عدد با نمایش تومانی و حروف زیر آن
@@ -165,7 +166,6 @@ class _NumberInputWithTomanState extends State<NumberInputWithToman> {
           ],
           validator: widget.validator,
           onSaved: (v) {
-            // حذف کاماها و ارسال عدد خالص
             final cleaned = v?.replaceAll(RegExp(r'[^\d]'), '') ?? '';
             widget.onSaved(cleaned);
           },
@@ -200,12 +200,10 @@ class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
     if (newValue.text.isEmpty) return newValue;
-    // حذف کاماهای قبلی
     final clean = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
     if (clean.isEmpty) return newValue;
     final intValue = int.tryParse(clean);
     if (intValue == null) return newValue;
-    // فرمت با کاما
     final formatted = NumberFormat('#,###').format(intValue);
     return newValue.copyWith(
       text: formatted,
