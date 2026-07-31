@@ -82,8 +82,8 @@ String formatToman(double amount) {
 String numberToTomanWords(double amount) {
   final toman = amount / 10;
   final intValue = toman.round();
-  // استفاده از extension روی String
-  final words = intValue.toString().toPersianWords();
+  // استفاده از متد toWord روی String
+  final words = intValue.toString().toWord();
   return words.toPersianDigit() + ' تومان';
 }
 
@@ -94,7 +94,7 @@ class NumberInputWithToman extends StatefulWidget {
   final ValueChanged<String> onSaved;
   final TextInputType keyboardType;
   final FormFieldValidator<String>? validator;
-  final bool isPrice; // برای تشخیص قیمت بودن و نمایش تومان
+  final bool isPrice;
 
   const NumberInputWithToman({
     Key? key,
