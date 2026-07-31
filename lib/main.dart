@@ -208,25 +208,12 @@ String goldTypeName(String k) {
 }
 
 Future<DateTime?> pickJalaliDate(BuildContext context, DateTime initial) async {
-  Jalali? picked;
-  await showDialog(
+  final picked = await showDialog<Jalali>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('انتخاب تاریخ'),
-      content: SizedBox(
-        width: 300,
-        height: 350,
-        child: JalaliDatePicker(
-          initialDate: Jalali.fromDateTime(initial),
-          firstDate: Jalali(1400, 1, 1),
-          lastDate: Jalali.now(),
-          onChanged: (j) => picked = j,
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('انصراف')),
-        ElevatedButton(onPressed: () => Navigator.pop(ctx), child: Text('تأیید')),
-      ],
+    builder: (ctx) => JalaliDatePickerDialog(
+      initialDate: Jalali.fromDateTime(initial),
+      firstDate: Jalali(1400, 1, 1),
+      lastDate: Jalali.now(),
     ),
   );
   return picked?.toDateTime();
