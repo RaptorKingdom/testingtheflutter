@@ -20,8 +20,8 @@ dependencies:
   html:
   shamsi_date:
   auto_size_text:
-  persian_datetimepickers: ^1.1.0
-  persian_number_utility: ^1.1.0
+  persian_datetimepickers: ^1.1.0    # جدید
+  persian_number_utility: ^1.1.6    # جدید
 
 dev_dependencies:
   flutter_test:
