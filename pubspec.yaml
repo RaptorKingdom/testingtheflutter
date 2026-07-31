@@ -19,7 +19,7 @@ dependencies:
   path_provider:
   html:
   shamsi_date:
-  datepicker_jalali:
+  persian_datepicker:
   auto_size_text:
 
 dev_dependencies:
