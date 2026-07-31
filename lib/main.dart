@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:ui' show TextDirection;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -14,7 +14,6 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:html/parser.dart' as html_parser;
 import 'package:shamsi_date/shamsi_date.dart';
-import 'package:jalali_flutter_datepicker/jalali_flutter_datepicker.dart' hide Jalali;
 import 'package:auto_size_text/auto_size_text.dart';
 
 part 'main.g.dart';
@@ -208,15 +207,16 @@ String goldTypeName(String k) {
 }
 
 Future<DateTime?> pickJalaliDate(BuildContext context, DateTime initial) async {
-  final picked = await showDialog<Jalali>(
+  final first = Jalali(1400, 1, 1).toDateTime();
+  final last = Jalali.now().toDateTime();
+  final picked = await showDatePicker(
     context: context,
-    builder: (ctx) => JalaliDatePickerDialog(
-      initialDate: Jalali.fromDateTime(initial),
-      firstDate: Jalali(1400, 1, 1),
-      lastDate: Jalali.now(),
-    ),
+    initialDate: initial,
+    firstDate: first,
+    lastDate: last,
+    locale: const Locale('fa'),
   );
-  return picked?.toDateTime();
+  return picked;
 }
 
 // -------------------- Providers --------------------
