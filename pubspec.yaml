@@ -19,7 +19,7 @@ dependencies:
   path_provider:
   html:
   shamsi_date:
-  crystal_navigation_bar: ^1.1.0
+  liquid_glass_bottom_bar: ^0.0.6
   auto_size_text:
   persian_datetimepickers: ^1.1.0    # جدید
   persian_number_utility: ^1.1.6    # جدید
