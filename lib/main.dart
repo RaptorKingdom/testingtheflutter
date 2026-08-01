@@ -40,6 +40,12 @@ String formatDoubleWithoutTrailingZeros(double value) {
   }
 }
 
+/// فرمت عدد با جداکننده هزارگان به صورت انگلیسی (برای ورودی)
+String formatWithSeparator(double value) {
+  if (value == 0) return '';
+  return NumberFormat('#,###').format(value);
+}
+
 String formatJalaliDate(DateTime dt) {
   final j = Jalali.fromDateTime(dt);
   return '${j.year}/${j.month.toString().padLeft(2,'0')}/${j.day.toString().padLeft(2,'0')}';
@@ -117,6 +123,7 @@ class _NumberInputWithTomanState extends State<NumberInputWithToman> {
   @override
   void initState() {
     super.initState();
+    // مقدار اولیه را با جداکننده نمایش می‌دهیم
     _controller = TextEditingController(text: widget.initialValue ?? '');
     _updateDisplay(_controller.text);
     _controller.addListener(() {
@@ -158,7 +165,7 @@ class _NumberInputWithTomanState extends State<NumberInputWithToman> {
             labelStyle: TextStyle(fontFamily: 'Vazir'),
           ),
           keyboardType: widget.keyboardType,
-          textAlign: TextAlign.left,  // چپ‌چین برای اعداد
+          textAlign: TextAlign.left,
           textDirection: TextDirection.ltr,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
@@ -791,7 +798,7 @@ class GoldListScreen extends StatelessWidget {
                   children: [
                     NumberInputWithToman(
                       label: 'فی خرید (ریال)',
-                      initialValue: price == 0 ? '' : formatDoubleWithoutTrailingZeros(price),
+                      initialValue: price == 0 ? '' : formatWithSeparator(price),
                       onSaved: (v) => price = double.parse(v),
                       validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
                     ),
@@ -863,9 +870,10 @@ class GoldListScreen extends StatelessWidget {
   }
 
   void _showSellGoldDialog(BuildContext context, GoldTransaction lot) {
-    final priceCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(
-      Provider.of<PriceProvider>(context, listen: false).prices[lot.type]?.currentPrice ?? 0
-    ));
+    final currentPrice = Provider.of<PriceProvider>(context, listen: false).prices[lot.type]?.currentPrice ?? 0;
+    final priceCtrl = TextEditingController(
+      text: currentPrice == 0 ? '' : formatWithSeparator(currentPrice)
+    );
     final qtyCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(lot.remainingQuantity));
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text('فروش طلا'),
@@ -1003,7 +1011,7 @@ class CoinListScreen extends StatelessWidget {
                     ),
                     NumberInputWithToman(
                       label: 'فی خرید (ریال)',
-                      initialValue: price == 0 ? '' : formatDoubleWithoutTrailingZeros(price),
+                      initialValue: price == 0 ? '' : formatWithSeparator(price),
                       onSaved: (v) => price = double.parse(v),
                       validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
                     ),
@@ -1076,9 +1084,10 @@ class CoinListScreen extends StatelessWidget {
   }
 
   void _showSellCoinDialog(BuildContext context, CoinTransaction lot) {
-    final priceCtrl = TextEditingController(text: formatDoubleWithoutTrailingZeros(
-      Provider.of<PriceProvider>(context, listen: false).prices[lot.coinType]?.currentPrice ?? 0
-    ));
+    final currentPrice = Provider.of<PriceProvider>(context, listen: false).prices[lot.coinType]?.currentPrice ?? 0;
+    final priceCtrl = TextEditingController(
+      text: currentPrice == 0 ? '' : formatWithSeparator(currentPrice)
+    );
     final cntCtrl = TextEditingController(text: lot.remainingCount.toString());
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: Text('فروش سکه'),
@@ -1241,7 +1250,7 @@ class SettingsScreen extends StatelessWidget {
         ...basePrices.keys.map((key) => Card(child: ListTile(
           title: Text(goldTypeName(key)),
           trailing: SizedBox(width: 120, child: TextFormField(
-            initialValue: basePrices[key] == 0 ? '' : formatDoubleWithoutTrailingZeros(basePrices[key] ?? 0),
+            initialValue: basePrices[key] == 0 ? '' : formatWithSeparator(basePrices[key] ?? 0),
             keyboardType: TextInputType.number,
             decoration: InputDecoration(hintText: 'ریال', isDense: true),
             textAlign: TextAlign.left,
