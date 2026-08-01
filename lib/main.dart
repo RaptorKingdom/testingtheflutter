@@ -867,7 +867,7 @@ class GoldListScreen extends StatelessWidget {
         ),
         Expanded(
           child: ListView(
-            padding: EdgeInsets.only(bottom: 100),
+            padding: EdgeInsets.only(bottom: 200),
             children: activeGold.map((g) {
               final cp = priceProvider.prices[g.type]?.currentPrice ?? 0;
               final paid = g.purchasePricePerUnit * g.remainingQuantity;
@@ -1075,7 +1075,7 @@ class CoinListScreen extends StatelessWidget {
         Card(margin: EdgeInsets.symmetric(horizontal: 8), child: ListTile(title: Text('مجموع مبلغ پرداختی'), trailing: AutoSizeText(formatRial(totalPaid), style: TextStyle(fontWeight: FontWeight.bold)))),
         Expanded(
           child: ListView(
-            padding: EdgeInsets.only(bottom: 100),
+            padding: EdgeInsets.only(bottom: 200),
             children: activeCoins.map((c) {
               final cp = priceProvider.prices[c.coinType]?.currentPrice ?? 0;
               final paid = c.purchasePricePerUnit * c.remainingCount;
