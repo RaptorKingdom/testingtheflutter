@@ -21,8 +21,11 @@ dependencies:
   shamsi_date:
   crystal_navigation_bar: ^1.1.0
   auto_size_text:
-  persian_datetimepickers: ^1.1.0    # جدید
-  persian_number_utility: ^1.1.6    # جدید
+  persian_datetimepickers: ^1.1.0
+  persian_number_utility: ^1.1.6
+  share_plus: ^7.2.1        # جدید - برای اشتراک‌گذاری فایل خروجی
+  file_picker: ^6.1.1       # جدید - برای انتخاب فایل وارداتی
+  flutter_colorpicker: ^1.0.3  # جدید - برای انتخاب رنگ در تنظیمات
 
 dev_dependencies:
   flutter_test:
@@ -34,6 +37,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fonts/
+    - assets/icon/icon.png   # آیکون برنامه
   fonts:
     - family: Vazir
       fonts:
