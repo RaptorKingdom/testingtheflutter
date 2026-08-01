@@ -1339,7 +1339,7 @@ class _MainScreenState extends State<MainScreen> {
         enableFloatingNavBar: true,
         borderRadius: 32,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        indicatorColor: Colors.blue.shade400.withOpacity(0.3), // ✅ فقط این خط کافی است
+        indicatorColor: Colors.blue.shade400.withOpacity(0.3), // ✅ این خط را حتماً اضافه کن
         items: [
           CrystalNavigationBarItem(
             icon: Icons.home,
