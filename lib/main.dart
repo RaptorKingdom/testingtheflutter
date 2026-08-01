@@ -18,6 +18,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:persian_datetimepickers/persian_datetimepickers.dart';
 import 'package:persian_number_utility/persian_number_utility.dart';
+import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
 
 part 'main.g.dart';
 
@@ -1271,228 +1272,6 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-// ========================= منوی پایین شیشه‌ای =========================
-
-class GlassBottomNavigation extends StatefulWidget {
-  final int selectedIndex;
-  final ValueChanged<int> onTap;
-
-  const GlassBottomNavigation({
-    Key? key,
-    required this.selectedIndex,
-    required this.onTap,
-  }) : super(key: key);
-
-  @override
-  State<GlassBottomNavigation> createState() => _GlassBottomNavigationState();
-}
-
-class _GlassBottomNavigationState extends State<GlassBottomNavigation>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _positionAnimation;
-  int _previousIndex = 0;
-
-  final List<_TabItem> _tabs = const [
-    _TabItem(Icons.home, 'خانه', Color(0xFFFFA574)),
-    _TabItem(Icons.monetization_on, 'طلای آب شده', Color(0xFFFA6FFF)),
-    _TabItem(Icons.account_balance_wallet, 'سکه', Color(0xFFADFF64)),
-    _TabItem(Icons.bar_chart, 'نمودارها', Color(0xFF64B5F6)),
-    _TabItem(Icons.settings, 'تنظیمات', Color(0xFFFFD54F)),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _positionAnimation = _controller.drive(Tween<double>(begin: 0, end: 0));
-    _previousIndex = widget.selectedIndex;
-  }
-
-  @override
-  void didUpdateWidget(covariant GlassBottomNavigation oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedIndex != widget.selectedIndex) {
-      _positionAnimation = _controller.drive(
-        Tween<double>(
-          begin: _previousIndex.toDouble(),
-          end: widget.selectedIndex.toDouble(),
-        ),
-      );
-      _previousIndex = widget.selectedIndex;
-      _controller.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 64,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // ---------- لایه بلور و حاشیه شیشه‌ای ----------
-          ClipOval(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
-                  border: Border.all(
-                    width: 0.5,
-                    color: Colors.white.withOpacity(0.8),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // ---------- لایه انیمیشن‌های رنگی (دایره + خط دش) ----------
-          AnimatedBuilder(
-            animation: _positionAnimation,
-            builder: (context, child) {
-              return CustomPaint(
-                painter: _BottomNavPainter(
-                  position: _positionAnimation.value,
-                  tabCount: _tabs.length,
-                  colors: _tabs.map((e) => e.color).toList(),
-                ),
-                size: Size(MediaQuery.of(context).size.width - 128, 64),
-              );
-            },
-          ),
-
-          // ---------- آیتم‌های منو ----------
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_tabs.length, (index) {
-              final isSelected = widget.selectedIndex == index;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => widget.onTap(index),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _tabs[index].icon,
-                        color: Colors.white.withOpacity(isSelected ? 1 : 0.35),
-                        size: 24,
-                      ),
-                      Text(
-                        _tabs[index].label,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(isSelected ? 1 : 0.35),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TabItem {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _TabItem(this.icon, this.label, this.color);
-}
-
-class _BottomNavPainter extends CustomPainter {
-  final double position;
-  final int tabCount;
-  final List<Color> colors;
-
-  _BottomNavPainter({
-    required this.position,
-    required this.tabCount,
-    required this.colors,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final tabWidth = size.width / tabCount;
-    final centerX = tabWidth * position + tabWidth / 2;
-    final centerY = size.height / 2;
-    final radius = size.height / 2;
-
-    final selectedColorIndex = position.round().clamp(0, tabCount - 1);
-    final selectedColor = colors[selectedColorIndex % colors.length];
-
-    // ---------- دایره رنگی با افکت بلور ----------
-    final blurPaint = Paint()
-      ..color = selectedColor.withOpacity(0.6)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
-    canvas.drawCircle(Offset(centerX, centerY), radius, blurPaint);
-
-    // ---------- حاشیه شیشه‌ای با گرادیان عمودی ----------
-    final gradientPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Colors.white.withOpacity(0.8),
-          Colors.white.withOpacity(0.2),
-        ],
-      ).createShader(
-        Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: radius),
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-    canvas.drawOval(
-      Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: radius),
-      gradientPaint,
-    );
-
-    // ---------- خط دش دستی (بدون استفاده از dashPath) ----------
-    final path = Path();
-    path.addOval(
-      Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: radius),
-    );
-    final pathMetric = path.computeMetrics().first;
-    final totalLength = pathMetric.length;
-
-    const dashLength = 10.0;
-    const gapLength = 10.0;
-    double currentDistance = 0.0;
-
-    final dashPaint = Paint()
-      ..color = selectedColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 6;
-
-    while (currentDistance < totalLength) {
-      final segment = pathMetric.extractPath(currentDistance, currentDistance + dashLength);
-      if (segment != null) {
-        canvas.drawPath(segment, dashPaint);
-      }
-      currentDistance += dashLength + gapLength;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BottomNavPainter oldDelegate) {
-    return oldDelegate.position != position;
-  }
-}
-
 // -------------------- Main --------------------
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -1538,18 +1317,50 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final List<Widget> _screens = [HomeScreen(), GoldListScreen(), CoinListScreen(), ChartsScreen(), SettingsScreen()];
+  final List<Widget> _screens = [
+    HomeScreen(),
+    GoldListScreen(),
+    CoinListScreen(),
+    ChartsScreen(),
+    SettingsScreen()
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_selectedIndex],
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 64),
-        child: GlassBottomNavigation(
-          selectedIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
-        ),
+      bottomNavigationBar: CrystalNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        backgroundColor: Colors.black.withOpacity(0.1),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white70,
+        enableFloatingNavBar: true,
+        borderRadius: BorderRadius.circular(32),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        indicatorColor: Colors.white.withOpacity(0.2),
+        items: [
+          CrystalNavigationBarItem(
+            icon: Icons.home,
+            selectedColor: Colors.white,
+          ),
+          CrystalNavigationBarItem(
+            icon: Icons.monetization_on,
+            selectedColor: Colors.white,
+          ),
+          CrystalNavigationBarItem(
+            icon: Icons.account_balance_wallet,
+            selectedColor: Colors.white,
+          ),
+          CrystalNavigationBarItem(
+            icon: Icons.bar_chart,
+            selectedColor: Colors.white,
+          ),
+          CrystalNavigationBarItem(
+            icon: Icons.settings,
+            selectedColor: Colors.white,
+          ),
+        ],
       ),
     );
   }
