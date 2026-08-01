@@ -22,6 +22,19 @@ import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
 
 part 'main.g.dart';
 
+// -------------------- قیمت‌های پایه ۱۴۰۵/۱/۱ (به ریال) --------------------
+const Map<String, double> basePrices140501 = {
+  'gold_18': 183065000,
+  'gold_24': 244060000,
+  'gold_ons': 46850000, // دلار - نیازی به ضرب در ۱۰ ندارد
+  'gold_mazneh': 793000000,
+  'coin_old': 1815000000,
+  'coin_new': 1855000000,
+  'coin_half': 985000000,
+  'coin_quarter': 560000000,
+  'coin_1g': 280000000,
+};
+
 // -------------------- Helpers --------------------
 String formatRial(double amount) {
   final formatted = NumberFormat('#,###').format(amount);
@@ -403,6 +416,215 @@ class ApiService {
   }
 }
 
+// -------------------- Theme Provider --------------------
+class ThemeProvider extends ChangeNotifier {
+  final SharedPreferences _prefs;
+
+  // رنگ‌ها
+  Color _primaryColor = Colors.amber;
+  Color _secondaryColor = Colors.blue.shade400;
+  Color _backgroundColor = Colors.black;
+  Color _surfaceColor = Colors.white;
+  Color _textColor = Colors.white;
+
+  // تنظیمات Bottom Navigation Bar
+  double _navBarOpacity = 0.15;
+  double _navBarBorderRadius = 32;
+  double _navBarHeight = 64;
+  Color _navBarSelectedColor = Colors.blue.shade400;
+  Color _navBarUnselectedColor = Colors.white70;
+  Color _navBarIndicatorColor = Colors.blue.shade400.withOpacity(0.3);
+  double _navBarMarginHorizontal = 20;
+  double _navBarMarginVertical = 10;
+  bool _navBarFloating = true;
+
+  ThemeProvider(this._prefs) {
+    _loadTheme();
+  }
+
+  // Getters
+  Color get primaryColor => _primaryColor;
+  Color get secondaryColor => _secondaryColor;
+  Color get backgroundColor => _backgroundColor;
+  Color get surfaceColor => _surfaceColor;
+  Color get textColor => _textColor;
+
+  double get navBarOpacity => _navBarOpacity;
+  double get navBarBorderRadius => _navBarBorderRadius;
+  double get navBarHeight => _navBarHeight;
+  Color get navBarSelectedColor => _navBarSelectedColor;
+  Color get navBarUnselectedColor => _navBarUnselectedColor;
+  Color get navBarIndicatorColor => _navBarIndicatorColor;
+  double get navBarMarginHorizontal => _navBarMarginHorizontal;
+  double get navBarMarginVertical => _navBarMarginVertical;
+  bool get navBarFloating => _navBarFloating;
+
+  // Setters
+  Future<void> setPrimaryColor(Color color) async {
+    _primaryColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setSecondaryColor(Color color) async {
+    _secondaryColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setBackgroundColor(Color color) async {
+    _backgroundColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setSurfaceColor(Color color) async {
+    _surfaceColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setTextColor(Color color) async {
+    _textColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarOpacity(double value) async {
+    _navBarOpacity = value;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarBorderRadius(double value) async {
+    _navBarBorderRadius = value;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarHeight(double value) async {
+    _navBarHeight = value;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarSelectedColor(Color color) async {
+    _navBarSelectedColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarUnselectedColor(Color color) async {
+    _navBarUnselectedColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarIndicatorColor(Color color) async {
+    _navBarIndicatorColor = color;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarMarginHorizontal(double value) async {
+    _navBarMarginHorizontal = value;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarMarginVertical(double value) async {
+    _navBarMarginVertical = value;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  Future<void> setNavBarFloating(bool value) async {
+    _navBarFloating = value;
+    await _saveTheme();
+    notifyListeners();
+  }
+
+  // بارگذاری از SharedPreferences
+  void _loadTheme() {
+    try {
+      // رنگ‌ها
+      final primaryHex = _prefs.getString('theme_primaryColor');
+      if (primaryHex != null) _primaryColor = Color(int.parse(primaryHex));
+      
+      final secondaryHex = _prefs.getString('theme_secondaryColor');
+      if (secondaryHex != null) _secondaryColor = Color(int.parse(secondaryHex));
+      
+      final bgHex = _prefs.getString('theme_backgroundColor');
+      if (bgHex != null) _backgroundColor = Color(int.parse(bgHex));
+      
+      final surfaceHex = _prefs.getString('theme_surfaceColor');
+      if (surfaceHex != null) _surfaceColor = Color(int.parse(surfaceHex));
+      
+      final textHex = _prefs.getString('theme_textColor');
+      if (textHex != null) _textColor = Color(int.parse(textHex));
+
+      // تنظیمات NavBar
+      _navBarOpacity = _prefs.getDouble('navbar_opacity') ?? 0.15;
+      _navBarBorderRadius = _prefs.getDouble('navbar_borderRadius') ?? 32;
+      _navBarHeight = _prefs.getDouble('navbar_height') ?? 64;
+      _navBarMarginHorizontal = _prefs.getDouble('navbar_marginH') ?? 20;
+      _navBarMarginVertical = _prefs.getDouble('navbar_marginV') ?? 10;
+      _navBarFloating = _prefs.getBool('navbar_floating') ?? true;
+
+      final selectedHex = _prefs.getString('navbar_selectedColor');
+      if (selectedHex != null) _navBarSelectedColor = Color(int.parse(selectedHex));
+      
+      final unselectedHex = _prefs.getString('navbar_unselectedColor');
+      if (unselectedHex != null) _navBarUnselectedColor = Color(int.parse(unselectedHex));
+      
+      final indicatorHex = _prefs.getString('navbar_indicatorColor');
+      if (indicatorHex != null) _navBarIndicatorColor = Color(int.parse(indicatorHex));
+      
+    } catch (e) {
+      // در صورت خطا از مقادیر پیش‌فرض استفاده می‌کنیم
+    }
+  }
+
+  Future<void> _saveTheme() async {
+    await _prefs.setString('theme_primaryColor', _primaryColor.value.toString());
+    await _prefs.setString('theme_secondaryColor', _secondaryColor.value.toString());
+    await _prefs.setString('theme_backgroundColor', _backgroundColor.value.toString());
+    await _prefs.setString('theme_surfaceColor', _surfaceColor.value.toString());
+    await _prefs.setString('theme_textColor', _textColor.value.toString());
+
+    await _prefs.setDouble('navbar_opacity', _navBarOpacity);
+    await _prefs.setDouble('navbar_borderRadius', _navBarBorderRadius);
+    await _prefs.setDouble('navbar_height', _navBarHeight);
+    await _prefs.setDouble('navbar_marginH', _navBarMarginHorizontal);
+    await _prefs.setDouble('navbar_marginV', _navBarMarginVertical);
+    await _prefs.setBool('navbar_floating', _navBarFloating);
+
+    await _prefs.setString('navbar_selectedColor', _navBarSelectedColor.value.toString());
+    await _prefs.setString('navbar_unselectedColor', _navBarUnselectedColor.value.toString());
+    await _prefs.setString('navbar_indicatorColor', _navBarIndicatorColor.value.toString());
+  }
+
+  // بازنشانی به حالت پیش‌فرض
+  Future<void> resetToDefault() async {
+    _primaryColor = Colors.amber;
+    _secondaryColor = Colors.blue.shade400;
+    _backgroundColor = Colors.black;
+    _surfaceColor = Colors.white;
+    _textColor = Colors.white;
+    _navBarOpacity = 0.15;
+    _navBarBorderRadius = 32;
+    _navBarHeight = 64;
+    _navBarSelectedColor = Colors.blue.shade400;
+    _navBarUnselectedColor = Colors.white70;
+    _navBarIndicatorColor = Colors.blue.shade400.withOpacity(0.3);
+    _navBarMarginHorizontal = 20;
+    _navBarMarginVertical = 10;
+    _navBarFloating = true;
+    await _saveTheme();
+    notifyListeners();
+  }
+}
+
 // -------------------- Providers --------------------
 class PriceProvider extends ChangeNotifier {
   Map<String, PriceResponse> _prices = {};
@@ -493,26 +715,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setAutoUpdateInterval(int s) async { _autoUpdateInterval = s; await _prefs.setInt('autoUpdateInterval', s); notifyListeners(); }
 }
 
-class BasePriceProvider extends ChangeNotifier {
-  Map<String, double> _basePrices = {};
-  final SharedPreferences _prefs;
-  BasePriceProvider(this._prefs) { _loadBasePrices(); }
-  Map<String, double> get basePrices => UnmodifiableMapView(_basePrices);
-  void _loadBasePrices() {
-    final jsonStr = _prefs.getString('basePrices');
-    if (jsonStr != null) {
-      final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-      _basePrices = map.map((k, v) => MapEntry(k, (v as num).toDouble()));
-    } else {
-      _basePrices = {
-        'gold_18':0,'gold_24':0,'gold_ons':0,'gold_mazneh':0,
-        'coin_old':0,'coin_new':0,'coin_half':0,'coin_quarter':0,'coin_1g':0,
-      };
-    }
-    notifyListeners();
-  }
-  Future<void> setBasePrice(String key, double value) async { _basePrices[key] = value; await _prefs.setString('basePrices', jsonEncode(_basePrices)); notifyListeners(); }
-}
+// کلاس BasePriceProvider حذف شد و قیمت‌های پایه به صورت ثابت در کد تعریف شدند
 
 class DataProvider extends ChangeNotifier {
   final Box<GoldTransaction> goldBox;
@@ -607,8 +810,7 @@ class HomeScreen extends StatelessWidget {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
     final settings = Provider.of<SettingsProvider>(context);
-    final basePriceProvider = Provider.of<BasePriceProvider>(context);
-    final basePrices = basePriceProvider.basePrices;
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     final DateTime startOf1405 = DateTime(2026, 3, 21);
     final DateTime endOf1404 = DateTime(2026, 3, 20);
@@ -630,9 +832,14 @@ class HomeScreen extends StatelessWidget {
     final unrealizedProfit = totalAssets - (totalGoldCost + totalCoinCost);
     final realizedProfit = dataProvider.totalRealizedProfit;
 
+    // محاسبه سود از ابتدای ۱۴۰۵ با استفاده از قیمت‌های پایه ثابت
     double base1405Cost = 0;
-    for (var g in dataProvider.activeGold) base1405Cost += (basePrices[g.type] ?? 0) * g.remainingQuantity;
-    for (var c in dataProvider.activeCoins) base1405Cost += (basePrices[c.coinType] ?? 0) * c.remainingCount;
+    for (var g in dataProvider.activeGold) {
+      base1405Cost += (basePrices140501[g.type] ?? 0) * g.remainingQuantity;
+    }
+    for (var c in dataProvider.activeCoins) {
+      base1405Cost += (basePrices140501[c.coinType] ?? 0) * c.remainingCount;
+    }
     final days1405 = DateTime.now().difference(startOf1405).inDays;
     final bankInterestCost = base1405Cost * settings.bankInterestRate * days1405 / 36500;
     final profitFrom1405 = totalAssets - base1405Cost - bankInterestCost;
@@ -640,15 +847,20 @@ class HomeScreen extends StatelessWidget {
     double realized1404 = 0;
     for (var g in dataProvider.goldBox.values) {
       if (g.purchaseDate.isAfter(endOf1404)) continue;
-      realized1404 += ((basePrices[g.type] ?? 0) - g.purchasePricePerUnit) * g.quantity;
+      realized1404 += ((basePrices140501[g.type] ?? 0) - g.purchasePricePerUnit) * g.quantity;
     }
     for (var c in dataProvider.coinBox.values) {
       if (c.purchaseDate.isAfter(endOf1404)) continue;
-      realized1404 += ((basePrices[c.coinType] ?? 0) - c.purchasePricePerUnit) * c.count;
+      realized1404 += ((basePrices140501[c.coinType] ?? 0) - c.purchasePricePerUnit) * c.count;
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('خلاصه دارایی'), centerTitle: true),
+      appBar: AppBar(
+        title: Text('خلاصه دارایی'),
+        centerTitle: true,
+        backgroundColor: themeProvider.primaryColor,
+        foregroundColor: themeProvider.textColor,
+      ),
       body: RefreshIndicator(
         onRefresh: priceProvider.fetchPrices,
         child: ListView(padding: EdgeInsets.all(16), children: [
@@ -714,12 +926,19 @@ class GoldListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final activeGold = dataProvider.activeGold;
     double totalWeight = activeGold.fold(0, (s, g) => s + g.remainingQuantity);
     double totalPaid = activeGold.fold(0, (s, g) => s + g.purchasePricePerUnit * g.remainingQuantity);
 
     return Scaffold(
-      appBar: AppBar(title: Text('طلای آب شده'), centerTitle: true, actions: [IconButton(icon: Icon(Icons.add), onPressed: () => _showAddEditGoldDialog(context, null))]),
+      appBar: AppBar(
+        title: Text('طلای آب شده'),
+        centerTitle: true,
+        backgroundColor: themeProvider.primaryColor,
+        foregroundColor: themeProvider.textColor,
+        actions: [IconButton(icon: Icon(Icons.add), onPressed: () => _showAddEditGoldDialog(context, null))],
+      ),
       body: Column(children: [
         Card(
           margin: EdgeInsets.all(8),
@@ -916,6 +1135,7 @@ class CoinListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final activeCoins = dataProvider.activeCoins;
     int totalCoins = activeCoins.fold(0, (s, c) => s + c.remainingCount);
     int rub = activeCoins.where((c) => c.coinType == 'coin_quarter').fold(0, (s, c) => s + c.remainingCount);
@@ -924,7 +1144,13 @@ class CoinListScreen extends StatelessWidget {
     double totalPaid = activeCoins.fold(0, (s, c) => s + c.purchasePricePerUnit * c.remainingCount);
 
     return Scaffold(
-      appBar: AppBar(title: Text('سکه‌ها'), centerTitle: true, actions: [IconButton(icon: Icon(Icons.add), onPressed: () => _showAddEditCoinDialog(context, null))]),
+      appBar: AppBar(
+        title: Text('سکه‌ها'),
+        centerTitle: true,
+        backgroundColor: themeProvider.primaryColor,
+        foregroundColor: themeProvider.textColor,
+        actions: [IconButton(icon: Icon(Icons.add), onPressed: () => _showAddEditCoinDialog(context, null))],
+      ),
       body: Column(children: [
         Card(margin: EdgeInsets.all(8), child: Padding(padding: EdgeInsets.all(12), child: Column(children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
@@ -1130,6 +1356,7 @@ class ChartsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     final activeGold = dataProvider.activeGold;
     final activeCoins = dataProvider.activeCoins;
@@ -1173,7 +1400,12 @@ class ChartsScreen extends StatelessWidget {
     spots.add(FlSpot(DateTime.now().millisecondsSinceEpoch.toDouble(), total));
 
     return Scaffold(
-      appBar: AppBar(title: Text('نمودارها'), centerTitle: true),
+      appBar: AppBar(
+        title: Text('نمودارها'),
+        centerTitle: true,
+        backgroundColor: themeProvider.primaryColor,
+        foregroundColor: themeProvider.textColor,
+      ),
       body: ListView(padding: EdgeInsets.all(16), children: [
         Text('توزیع دارایی', style: Theme.of(context).textTheme.titleMedium),
         SizedBox(height: 10),
@@ -1219,54 +1451,474 @@ class ChartsScreen extends StatelessWidget {
 
 class _Lot { final DateTime date; final double cost; _Lot(this.date, this.cost); }
 
+// -------------------- صفحه تنظیمات تم --------------------
+class ThemeSettingsScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
+    final priceProvider = Provider.of<PriceProvider>(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('تنظیمات ظاهری'),
+        backgroundColor: themeProvider.primaryColor,
+        foregroundColor: themeProvider.textColor,
+      ),
+      body: ListView(
+        padding: EdgeInsets.all(16),
+        children: [
+          // ---------- توضیحات ----------
+          Card(
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Text(
+                    '🎨 شخصی‌سازی کامل ظاهر برنامه',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'در این بخش می‌توانید تمام رنگ‌های برنامه و همچنین ظاهر منوی پایین را به دلخواه خود تغییر دهید.',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 16),
+          Text('🎨 رنگ‌های اصلی برنامه', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
+
+          _buildColorPicker(
+            context,
+            title: 'رنگ اصلی (Primary)',
+            description: 'رنگ نوار بالای صفحات و دکمه‌های اصلی',
+            currentColor: themeProvider.primaryColor,
+            onColorSelected: (color) => themeProvider.setPrimaryColor(color),
+          ),
+
+          _buildColorPicker(
+            context,
+            title: 'رنگ ثانویه (Secondary)',
+            description: 'رنگ منوی پایین در حالت انتخاب',
+            currentColor: themeProvider.secondaryColor,
+            onColorSelected: (color) => themeProvider.setSecondaryColor(color),
+          ),
+
+          _buildColorPicker(
+            context,
+            title: 'رنگ پس‌زمینه',
+            description: 'رنگ پس‌زمینه کلی برنامه',
+            currentColor: themeProvider.backgroundColor,
+            onColorSelected: (color) => themeProvider.setBackgroundColor(color),
+          ),
+
+          _buildColorPicker(
+            context,
+            title: 'رنگ متن',
+            description: 'رنگ نوشته‌های برنامه',
+            currentColor: themeProvider.textColor,
+            onColorSelected: (color) => themeProvider.setTextColor(color),
+          ),
+
+          SizedBox(height: 24),
+          Text('📱 تنظیمات منوی پایین (Bottom Navigation Bar)',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8),
+
+          _buildSliderSetting(
+            title: 'شفافیت پس‌زمینه',
+            description: 'میزان شفافیت منوی پایین (۰ تا ۱)',
+            value: themeProvider.navBarOpacity,
+            min: 0,
+            max: 1,
+            divisions: 20,
+            onChanged: (v) => themeProvider.setNavBarOpacity(v),
+          ),
+
+          _buildSliderSetting(
+            title: 'گردی گوشه‌ها',
+            description: 'میزان گردی گوشه‌های منوی پایین',
+            value: themeProvider.navBarBorderRadius,
+            min: 0,
+            max: 50,
+            divisions: 50,
+            onChanged: (v) => themeProvider.setNavBarBorderRadius(v),
+          ),
+
+          _buildSliderSetting(
+            title: 'ارتفاع منو',
+            description: 'ارتفاع منوی پایین',
+            value: themeProvider.navBarHeight,
+            min: 50,
+            max: 80,
+            divisions: 30,
+            onChanged: (v) => themeProvider.setNavBarHeight(v),
+          ),
+
+          _buildSliderSetting(
+            title: 'فاصله افقی از لبه',
+            description: 'فاصله منو از لبه‌های چپ و راست',
+            value: themeProvider.navBarMarginHorizontal,
+            min: 0,
+            max: 60,
+            divisions: 30,
+            onChanged: (v) => themeProvider.setNavBarMarginHorizontal(v),
+          ),
+
+          _buildSliderSetting(
+            title: 'فاصله عمودی از پایین',
+            description: 'فاصله منو از پایین صفحه',
+            value: themeProvider.navBarMarginVertical,
+            min: 0,
+            max: 40,
+            divisions: 20,
+            onChanged: (v) => themeProvider.setNavBarMarginVertical(v),
+          ),
+
+          _buildColorPicker(
+            context,
+            title: 'رنگ آیتم انتخاب‌شده',
+            description: 'رنگ آیکون و نوشته گزینه فعال',
+            currentColor: themeProvider.navBarSelectedColor,
+            onColorSelected: (color) => themeProvider.setNavBarSelectedColor(color),
+          ),
+
+          _buildColorPicker(
+            context,
+            title: 'رنگ آیتم‌های غیرفعال',
+            description: 'رنگ آیکون و نوشته گزینه‌های غیرفعال',
+            currentColor: themeProvider.navBarUnselectedColor,
+            onColorSelected: (color) => themeProvider.setNavBarUnselectedColor(color),
+          ),
+
+          _buildColorPicker(
+            context,
+            title: 'رنگ نشان‌گر (دایره)',
+            description: 'رنگ دایره اطراف گزینه فعال',
+            currentColor: themeProvider.navBarIndicatorColor,
+            onColorSelected: (color) => themeProvider.setNavBarIndicatorColor(color),
+          ),
+
+          SwitchListTile(
+            title: Text('منوی شناور'),
+            subtitle: Text('فعال‌سازی حالت شناور منوی پایین'),
+            value: themeProvider.navBarFloating,
+            onChanged: (value) => themeProvider.setNavBarFloating(value),
+          ),
+
+          SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text('بازنشانی به حالت پیش‌فرض'),
+                  content: Text('آیا از بازنشانی تمام تنظیمات ظاهری به حالت اولیه اطمینان دارید؟'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
+                    ElevatedButton(
+                      onPressed: () {
+                        themeProvider.resetToDefault();
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('تنظیمات به حالت پیش‌فرض بازنشانی شد')),
+                        );
+                      },
+                      child: Text('بازنشانی'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('بازنشانی به حالت پیش‌فرض'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorPicker(BuildContext context, {
+    required String title,
+    required String description,
+    required Color currentColor,
+    required ValueChanged<Color> onColorSelected,
+  }) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(title),
+        subtitle: Text(description, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: currentColor,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+        ),
+        trailing: Icon(Icons.arrow_forward_ios, size: 16),
+        onTap: () async {
+          final picked = await showDialog<Color>(
+            context: context,
+            builder: (ctx) => SimpleDialog(
+              title: Text('انتخاب رنگ'),
+              children: [
+                SimpleDialogOption(
+                  child: Container(
+                    height: 200,
+                    width: 300,
+                    child: ColorPicker(
+                      initialColor: currentColor,
+                      onColorChanged: (color) {
+                        onColorSelected(color);
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSliderSetting({
+    required String title,
+    required String description,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Card(
+      margin: EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(description, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Slider(
+              value: value,
+              min: min,
+              max: max,
+              divisions: divisions,
+              label: value.toStringAsFixed(1),
+              onChanged: onChanged,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// -------------------- ویجت ساده انتخاب رنگ --------------------
+class ColorPicker extends StatefulWidget {
+  final Color initialColor;
+  final ValueChanged<Color> onColorChanged;
+
+  const ColorPicker({
+    Key? key,
+    required this.initialColor,
+    required this.onColorChanged,
+  }) : super(key: key);
+
+  @override
+  _ColorPickerState createState() => _ColorPickerState();
+}
+
+class _ColorPickerState extends State<ColorPicker> {
+  late Color selectedColor;
+
+  final List<Color> presetColors = [
+    Colors.red,
+    Colors.pink,
+    Colors.purple,
+    Colors.deepPurple,
+    Colors.indigo,
+    Colors.blue,
+    Colors.lightBlue,
+    Colors.cyan,
+    Colors.teal,
+    Colors.green,
+    Colors.lightGreen,
+    Colors.lime,
+    Colors.yellow,
+    Colors.amber,
+    Colors.orange,
+    Colors.deepOrange,
+    Colors.brown,
+    Colors.grey,
+    Colors.blueGrey,
+    Colors.black,
+    Colors.white,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    selectedColor = widget.initialColor;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: presetColors.length,
+            itemBuilder: (context, index) {
+              final color = presetColors[index];
+              final isSelected = color.value == selectedColor.value;
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedColor = color;
+                  });
+                  widget.onColorChanged(color);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.blue : Colors.grey.shade300,
+                      width: isSelected ? 4 : 1,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        SizedBox(height: 8),
+        Text('رنگ انتخاب‌شده:', style: TextStyle(fontWeight: FontWeight.bold)),
+        Container(
+          margin: EdgeInsets.all(8),
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: selectedColor,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// -------------------- صفحه تنظیمات اصلی --------------------
 class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = Provider.of<SettingsProvider>(context);
     final priceProvider = Provider.of<PriceProvider>(context);
-    final basePriceProvider = Provider.of<BasePriceProvider>(context);
-    final basePrices = basePriceProvider.basePrices;
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('تنظیمات'), centerTitle: true),
+      appBar: AppBar(
+        title: Text('تنظیمات'),
+        centerTitle: true,
+        backgroundColor: themeProvider.primaryColor,
+        foregroundColor: themeProvider.textColor,
+      ),
       body: ListView(padding: EdgeInsets.all(16), children: [
         Card(
           child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
             Text('نرخ سود بانکی'),
-            Slider(value: settings.bankInterestRate, min: 0, max: 50, divisions: 100, label: '${settings.bankInterestRate.toStringAsFixed(1)}%', onChanged: (v) => settings.setBankInterestRate(v)),
+            Slider(value: settings.bankInterestRate, min: 0, max: 50, divisions: 100,
+                label: '${settings.bankInterestRate.toStringAsFixed(1)}%',
+                onChanged: (v) => settings.setBankInterestRate(v)),
             Text('${settings.bankInterestRate.toStringAsFixed(1)}%'),
           ])),
         ),
         Card(
           child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
             Text('فاصله به‌روزرسانی خودکار (ثانیه)'),
-            Slider(value: settings.autoUpdateInterval.toDouble(), min: 30, max: 600, divisions: (600-30)~/10, label: '${settings.autoUpdateInterval}', onChanged: (v) { settings.setAutoUpdateInterval(v.toInt()); priceProvider.setAutoUpdateInterval(v.toInt()); }),
+            Slider(value: settings.autoUpdateInterval.toDouble(), min: 30, max: 600, divisions: (600-30)~/10,
+                label: '${settings.autoUpdateInterval}',
+                onChanged: (v) {
+                  settings.setAutoUpdateInterval(v.toInt());
+                  priceProvider.setAutoUpdateInterval(v.toInt());
+                }),
             Text('${settings.autoUpdateInterval} ثانیه'),
           ])),
         ),
-        Card(child: ListTile(title: Text('به‌روزرسانی دستی قیمت‌ها'), trailing: Icon(Icons.refresh), onTap: priceProvider.fetchPrices)),
+        Card(child: ListTile(
+          title: Text('به‌روزرسانی دستی قیمت‌ها'),
+          trailing: Icon(Icons.refresh),
+          onTap: priceProvider.fetchPrices,
+        )),
+        Card(child: ListTile(
+          title: Text('🎨 تنظیمات ظاهری (تم)'),
+          subtitle: Text('شخصی‌سازی رنگ‌ها و منوی پایین'),
+          trailing: Icon(Icons.arrow_forward_ios, size: 16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ThemeSettingsScreen()),
+            );
+          },
+        )),
         SizedBox(height: 20),
-        Text('قیمت‌های پایه (۱/۱/۱۴۰۵) - به ریال', style: Theme.of(context).textTheme.titleMedium),
-        ...basePrices.keys.map((key) => Card(child: ListTile(
-          title: Text(goldTypeName(key)),
-          trailing: SizedBox(width: 120, child: TextFormField(
-            initialValue: basePrices[key] == 0 ? '' : formatWithSeparator(basePrices[key] ?? 0),
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(hintText: 'ریال', isDense: true),
-            textAlign: TextAlign.left,
-            textDirection: TextDirection.ltr,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-              ThousandsSeparatorInputFormatter(),
-            ],
-            onFieldSubmitted: (value) {
-              final cleaned = value.replaceAll(RegExp(r'[^\d]'), '');
-              final v = double.tryParse(cleaned) ?? 0;
-              basePriceProvider.setBasePrice(key, v);
-            },
-          )),
-        ))),
-        Card(child: ListTile(title: Text('نسخه ۲.۰.۰'), subtitle: Text('ساخته شده توسط امیر - بنیانگذار نخودگرام'))),
+        Card(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('📊 قیمت‌های پایه (۱۴۰۵/۱/۱)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                SizedBox(height: 8),
+                Text('قیمت‌های مرجع برای محاسبه عملکرد از ابتدای سال',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                Divider(),
+                ...basePrices140501.entries.map((entry) {
+                  final key = entry.key;
+                  final value = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(goldTypeName(key), style: TextStyle(fontSize: 14)),
+                        Text(formatRial(value), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                SizedBox(height: 8),
+                Text('* قیمت انس طلا به دلار است', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 20),
+        Card(child: ListTile(
+          title: Text('نسخه ۲.۰.۰'),
+          subtitle: Text('ساخته شده توسط امیر - بنیانگذار نخودگرام'),
+        )),
       ]),
     );
   }
@@ -1291,20 +1943,33 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
         ChangeNotifierProvider(create: (_) => PriceProvider(prefs)),
         ChangeNotifierProvider(create: (_) => SettingsProvider(prefs)),
-        ChangeNotifierProvider(create: (_) => BasePriceProvider(prefs)),
         ChangeNotifierProvider(create: (_) => DataProvider(goldBox: goldBox, coinBox: coinBox, saleBox: saleBox)),
       ],
-      child: MaterialApp(
-        title: 'مدیریت دارایی طلا و سکه',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.amber),
-          fontFamily: 'Vazir',
-        ),
-        home: MainScreen(),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'مدیریت دارایی طلا و سکه',
+            theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: themeProvider.primaryColor,
+                primary: themeProvider.primaryColor,
+                secondary: themeProvider.secondaryColor,
+                background: themeProvider.backgroundColor,
+                surface: themeProvider.surfaceColor,
+                onBackground: themeProvider.textColor,
+                onSurface: themeProvider.textColor,
+              ),
+              scaffoldBackgroundColor: themeProvider.backgroundColor,
+              fontFamily: 'Vazir',
+            ),
+            home: MainScreen(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     ),
   );
@@ -1327,40 +1992,45 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       extendBody: true,
       body: _screens[_selectedIndex],
       bottomNavigationBar: CrystalNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        backgroundColor: Colors.black.withOpacity(0.15),
-        selectedItemColor: Colors.blue.shade400,
-        unselectedItemColor: Colors.white70,
-        enableFloatingNavBar: true,
-        borderRadius: 32,
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        indicatorColor: Colors.blue.shade400.withOpacity(0.3),
-        // height حذف شد تا از ارتفاع پیش‌فرض (105) استفاده شود
+        backgroundColor: Colors.black.withOpacity(themeProvider.navBarOpacity),
+        selectedItemColor: themeProvider.navBarSelectedColor,
+        unselectedItemColor: themeProvider.navBarUnselectedColor,
+        enableFloatingNavBar: themeProvider.navBarFloating,
+        borderRadius: themeProvider.navBarBorderRadius.toInt(),
+        margin: EdgeInsets.symmetric(
+          horizontal: themeProvider.navBarMarginHorizontal,
+          vertical: themeProvider.navBarMarginVertical,
+        ),
+        indicatorColor: themeProvider.navBarIndicatorColor,
+        height: themeProvider.navBarHeight,
         items: [
           CrystalNavigationBarItem(
             icon: Icons.home,
-            selectedColor: Colors.blue.shade400,
+            selectedColor: themeProvider.navBarSelectedColor,
           ),
           CrystalNavigationBarItem(
             icon: Icons.monetization_on,
-            selectedColor: Colors.blue.shade400,
+            selectedColor: themeProvider.navBarSelectedColor,
           ),
           CrystalNavigationBarItem(
             icon: Icons.account_balance_wallet,
-            selectedColor: Colors.blue.shade400,
+            selectedColor: themeProvider.navBarSelectedColor,
           ),
           CrystalNavigationBarItem(
             icon: Icons.bar_chart,
-            selectedColor: Colors.blue.shade400,
+            selectedColor: themeProvider.navBarSelectedColor,
           ),
           CrystalNavigationBarItem(
             icon: Icons.settings,
-            selectedColor: Colors.blue.shade400,
+            selectedColor: themeProvider.navBarSelectedColor,
           ),
         ],
       ),
