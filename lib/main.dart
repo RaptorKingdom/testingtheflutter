@@ -1340,6 +1340,8 @@ class _MainScreenState extends State<MainScreen> {
         borderRadius: 32,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         indicatorColor: Colors.blue.shade400.withOpacity(0.3),
+        indicatorHeight: 45,  // ← اضافه شد برای نمایش دایره
+        indicatorWidth: 45,   // ← اضافه شد برای نمایش دایره
         items: [
           CrystalNavigationBarItem(
             icon: Icons.home,
