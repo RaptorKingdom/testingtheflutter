@@ -1336,7 +1336,7 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,
         enableFloatingNavBar: true,
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: 32, // اصلاح: عدد به جای BorderRadius
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         indicatorColor: Colors.white.withOpacity(0.2),
         items: [
