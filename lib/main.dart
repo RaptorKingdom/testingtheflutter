@@ -715,8 +715,6 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setAutoUpdateInterval(int s) async { _autoUpdateInterval = s; await _prefs.setInt('autoUpdateInterval', s); notifyListeners(); }
 }
 
-// کلاس BasePriceProvider حذف شد و قیمت‌های پایه به صورت ثابت در کد تعریف شدند
-
 class DataProvider extends ChangeNotifier {
   final Box<GoldTransaction> goldBox;
   final Box<CoinTransaction> coinBox;
@@ -832,7 +830,6 @@ class HomeScreen extends StatelessWidget {
     final unrealizedProfit = totalAssets - (totalGoldCost + totalCoinCost);
     final realizedProfit = dataProvider.totalRealizedProfit;
 
-    // محاسبه سود از ابتدای ۱۴۰۵ با استفاده از قیمت‌های پایه ثابت
     double base1405Cost = 0;
     for (var g in dataProvider.activeGold) {
       base1405Cost += (basePrices140501[g.type] ?? 0) * g.remainingQuantity;
@@ -2004,7 +2001,7 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: themeProvider.navBarSelectedColor,
         unselectedItemColor: themeProvider.navBarUnselectedColor,
         enableFloatingNavBar: themeProvider.navBarFloating,
-        borderRadius: themeProvider.navBarBorderRadius.toInt(),
+        borderRadius: themeProvider.navBarBorderRadius, // اصلاح شد: دیگر toInt() استفاده نمی‌شود
         margin: EdgeInsets.symmetric(
           horizontal: themeProvider.navBarMarginHorizontal,
           vertical: themeProvider.navBarMarginVertical,
