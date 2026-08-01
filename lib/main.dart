@@ -1461,25 +1461,30 @@ class _BottomNavPainter extends CustomPainter {
       gradientPaint,
     );
 
-    // ---------- خط دش دور دایره ----------
+    // ---------- خط دش دستی (بدون استفاده از dashPath) ----------
     final path = Path();
     path.addOval(
       Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: radius),
     );
     final pathMetric = path.computeMetrics().first;
-    final length = pathMetric.length;
+    final totalLength = pathMetric.length;
 
-    // ایجاد مسیر دش شده با استفاده از dashPath
-    final dashedPath = path.dashPath(
-      dashArray: [length / 2, length],
-      phase: 0,
-    );
+    const dashLength = 10.0;
+    const gapLength = 10.0;
+    double currentDistance = 0.0;
 
     final dashPaint = Paint()
       ..color = selectedColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 6;
-    canvas.drawPath(dashedPath, dashPaint);
+
+    while (currentDistance < totalLength) {
+      final segment = pathMetric.extractPath(currentDistance, currentDistance + dashLength);
+      if (segment != null) {
+        canvas.drawPath(segment, dashPaint);
+      }
+      currentDistance += dashLength + gapLength;
+    }
   }
 
   @override
