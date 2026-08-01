@@ -420,20 +420,20 @@ class ApiService {
 class ThemeProvider extends ChangeNotifier {
   final SharedPreferences _prefs;
 
-  // رنگ‌ها
+  // رنگ‌ها (پیش‌فرض تم روشن)
   Color _primaryColor = Colors.amber;
-  Color _secondaryColor = Colors.blue.shade400;
-  Color _backgroundColor = Colors.black;
+  Color _secondaryColor = Colors.blue;
+  Color _backgroundColor = Colors.white;
   Color _surfaceColor = Colors.white;
-  Color _textColor = Colors.white;
+  Color _textColor = Colors.black;
 
   // تنظیمات Bottom Navigation Bar
   double _navBarOpacity = 0.15;
   double _navBarBorderRadius = 32;
   double _navBarHeight = 64;
-  Color _navBarSelectedColor = Colors.blue.shade400;
-  Color _navBarUnselectedColor = Colors.white70;
-  Color _navBarIndicatorColor = Colors.blue.shade400.withOpacity(0.3);
+  Color _navBarSelectedColor = Colors.blue;
+  Color _navBarUnselectedColor = Colors.grey.shade700;
+  Color _navBarIndicatorColor = Colors.blue.withOpacity(0.3);
   double _navBarMarginHorizontal = 20;
   double _navBarMarginVertical = 10;
   bool _navBarFloating = true;
@@ -607,16 +607,16 @@ class ThemeProvider extends ChangeNotifier {
   // بازنشانی به حالت پیش‌فرض
   Future<void> resetToDefault() async {
     _primaryColor = Colors.amber;
-    _secondaryColor = Colors.blue.shade400;
-    _backgroundColor = Colors.black;
+    _secondaryColor = Colors.blue;
+    _backgroundColor = Colors.white;
     _surfaceColor = Colors.white;
-    _textColor = Colors.white;
+    _textColor = Colors.black;
     _navBarOpacity = 0.15;
     _navBarBorderRadius = 32;
     _navBarHeight = 64;
-    _navBarSelectedColor = Colors.blue.shade400;
-    _navBarUnselectedColor = Colors.white70;
-    _navBarIndicatorColor = Colors.blue.shade400.withOpacity(0.3);
+    _navBarSelectedColor = Colors.blue;
+    _navBarUnselectedColor = Colors.grey.shade700;
+    _navBarIndicatorColor = Colors.blue.withOpacity(0.3);
     _navBarMarginHorizontal = 20;
     _navBarMarginVertical = 10;
     _navBarFloating = true;
@@ -1448,13 +1448,126 @@ class ChartsScreen extends StatelessWidget {
 
 class _Lot { final DateTime date; final double cost; _Lot(this.date, this.cost); }
 
+// -------------------- ColorPicker Dialog (Full HSV) --------------------
+class ColorPickerDialog extends StatefulWidget {
+  final Color initialColor;
+  final ValueChanged<Color> onColorSelected;
+
+  const ColorPickerDialog({
+    Key? key,
+    required this.initialColor,
+    required this.onColorSelected,
+  }) : super(key: key);
+
+  @override
+  _ColorPickerDialogState createState() => _ColorPickerDialogState();
+}
+
+class _ColorPickerDialogState extends State<ColorPickerDialog> {
+  late double _hue;
+  late double _saturation;
+  late double _brightness;
+
+  @override
+  void initState() {
+    super.initState();
+    final hsv = HSLColor.fromColor(widget.initialColor);
+    _hue = hsv.hue;
+    _saturation = hsv.saturation;
+    _brightness = hsv.lightness;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('انتخاب رنگ'),
+      content: Container(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Preview
+            Container(
+              height: 60,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: HSLColor.fromAHSL(1, _hue, _saturation, _brightness).toColor(),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+            ),
+            SizedBox(height: 16),
+            // Hue slider
+            Row(
+              children: [
+                Text('رنگ', style: TextStyle(fontWeight: FontWeight.w500, width: 60)),
+                Expanded(
+                  child: Slider(
+                    value: _hue,
+                    min: 0,
+                    max: 360,
+                    onChanged: (v) => setState(() => _hue = v),
+                    activeColor: Colors.amber,
+                  ),
+                ),
+              ],
+            ),
+            // Saturation slider
+            Row(
+              children: [
+                Text('اشباع', style: TextStyle(fontWeight: FontWeight.w500, width: 60)),
+                Expanded(
+                  child: Slider(
+                    value: _saturation,
+                    min: 0,
+                    max: 1,
+                    onChanged: (v) => setState(() => _saturation = v),
+                    activeColor: Colors.amber,
+                  ),
+                ),
+              ],
+            ),
+            // Brightness slider
+            Row(
+              children: [
+                Text('روشنی', style: TextStyle(fontWeight: FontWeight.w500, width: 60)),
+                Expanded(
+                  child: Slider(
+                    value: _brightness,
+                    min: 0,
+                    max: 1,
+                    onChanged: (v) => setState(() => _brightness = v),
+                    activeColor: Colors.amber,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('لغو'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final color = HSLColor.fromAHSL(1, _hue, _saturation, _brightness).toColor();
+            widget.onColorSelected(color);
+            Navigator.pop(context);
+          },
+          child: Text('انتخاب'),
+        ),
+      ],
+    );
+  }
+}
+
 // -------------------- صفحه تنظیمات تم --------------------
 class ThemeSettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
-    final settings = Provider.of<SettingsProvider>(context);
-    final priceProvider = Provider.of<PriceProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -1664,29 +1777,13 @@ class ThemeSettingsScreen extends StatelessWidget {
           ),
         ),
         trailing: Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () async {
-          final picked = await showDialog<Color>(
-            context: context,
-            builder: (ctx) => SimpleDialog(
-              title: Text('انتخاب رنگ'),
-              children: [
-                SimpleDialogOption(
-                  child: Container(
-                    height: 200,
-                    width: 300,
-                    child: ColorPicker(
-                      initialColor: currentColor,
-                      onColorChanged: (color) {
-                        onColorSelected(color);
-                        Navigator.pop(ctx);
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+        onTap: () => showDialog(
+          context: context,
+          builder: (ctx) => ColorPickerDialog(
+            initialColor: currentColor,
+            onColorSelected: onColorSelected,
+          ),
+        ),
       ),
     );
   }
@@ -1720,107 +1817,6 @@ class ThemeSettingsScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// -------------------- ویجت ساده انتخاب رنگ --------------------
-class ColorPicker extends StatefulWidget {
-  final Color initialColor;
-  final ValueChanged<Color> onColorChanged;
-
-  const ColorPicker({
-    Key? key,
-    required this.initialColor,
-    required this.onColorChanged,
-  }) : super(key: key);
-
-  @override
-  _ColorPickerState createState() => _ColorPickerState();
-}
-
-class _ColorPickerState extends State<ColorPicker> {
-  late Color selectedColor;
-
-  final List<Color> presetColors = [
-    Colors.red,
-    Colors.pink,
-    Colors.purple,
-    Colors.deepPurple,
-    Colors.indigo,
-    Colors.blue,
-    Colors.lightBlue,
-    Colors.cyan,
-    Colors.teal,
-    Colors.green,
-    Colors.lightGreen,
-    Colors.lime,
-    Colors.yellow,
-    Colors.amber,
-    Colors.orange,
-    Colors.deepOrange,
-    Colors.brown,
-    Colors.grey,
-    Colors.blueGrey,
-    Colors.black,
-    Colors.white,
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    selectedColor = widget.initialColor;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 5,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: presetColors.length,
-            itemBuilder: (context, index) {
-              final color = presetColors[index];
-              final isSelected = color.value == selectedColor.value;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedColor = color;
-                  });
-                  widget.onColorChanged(color);
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected ? Colors.blue : Colors.grey.shade300,
-                      width: isSelected ? 4 : 1,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        SizedBox(height: 8),
-        Text('رنگ انتخاب‌شده:', style: TextStyle(fontWeight: FontWeight.bold)),
-        Container(
-          margin: EdgeInsets.all(8),
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: selectedColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -2001,7 +1997,7 @@ class _MainScreenState extends State<MainScreen> {
         selectedItemColor: themeProvider.navBarSelectedColor,
         unselectedItemColor: themeProvider.navBarUnselectedColor,
         enableFloatingNavBar: themeProvider.navBarFloating,
-        borderRadius: themeProvider.navBarBorderRadius, // اصلاح شد: دیگر toInt() استفاده نمی‌شود
+        borderRadius: themeProvider.navBarBorderRadius,
         margin: EdgeInsets.symmetric(
           horizontal: themeProvider.navBarMarginHorizontal,
           vertical: themeProvider.navBarMarginVertical,
