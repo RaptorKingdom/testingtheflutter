@@ -1469,15 +1469,17 @@ class _BottomNavPainter extends CustomPainter {
     final pathMetric = path.computeMetrics().first;
     final length = pathMetric.length;
 
+    // ایجاد مسیر دش شده با استفاده از dashPath
+    final dashedPath = path.dashPath(
+      dashArray: [length / 2, length],
+      phase: 0,
+    );
+
     final dashPaint = Paint()
       ..color = selectedColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 6
-      ..pathEffect = Path.dashPathEffect(
-        [length / 2, length],
-        phase: 0,
-      );
-    canvas.drawPath(path, dashPaint);
+      ..strokeWidth = 6;
+    canvas.drawPath(dashedPath, dashPaint);
   }
 
   @override
