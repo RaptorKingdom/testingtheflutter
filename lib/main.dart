@@ -1500,7 +1500,7 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
             // Hue slider
             Row(
               children: [
-                Text('رنگ', style: TextStyle(fontWeight: FontWeight.w500, width: 60)),
+                SizedBox(width: 60, child: Text('رنگ', style: TextStyle(fontWeight: FontWeight.w500))),
                 Expanded(
                   child: Slider(
                     value: _hue,
@@ -1515,7 +1515,7 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
             // Saturation slider
             Row(
               children: [
-                Text('اشباع', style: TextStyle(fontWeight: FontWeight.w500, width: 60)),
+                SizedBox(width: 60, child: Text('اشباع', style: TextStyle(fontWeight: FontWeight.w500))),
                 Expanded(
                   child: Slider(
                     value: _saturation,
@@ -1530,7 +1530,7 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
             // Brightness slider
             Row(
               children: [
-                Text('روشنی', style: TextStyle(fontWeight: FontWeight.w500, width: 60)),
+                SizedBox(width: 60, child: Text('روشنی', style: TextStyle(fontWeight: FontWeight.w500))),
                 Expanded(
                   child: Slider(
                     value: _brightness,
