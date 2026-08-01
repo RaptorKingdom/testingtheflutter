@@ -18,7 +18,7 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:persian_datetimepickers/persian_datetimepickers.dart';
 import 'package:persian_number_utility/persian_number_utility.dart';
-import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
+import 'package:liquid_glass_bottom_bar/liquid_glass_bottom_bar.dart';
 
 part 'main.g.dart';
 
@@ -1310,6 +1310,8 @@ void main() async {
   );
 }
 
+// ====================== MainScreen با LiquidGlassBottomBar ======================
+
 class MainScreen extends StatefulWidget {
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -1329,39 +1331,46 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: CrystalNavigationBar(
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: LiquidGlassBottomBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        backgroundColor: Colors.black.withOpacity(0.15),
-        selectedItemColor: Colors.blue.shade400,
-        unselectedItemColor: Colors.white70,
-        enableFloatingNavBar: true,
-        borderRadius: 32,
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        indicatorColor: Colors.blue.shade400.withOpacity(0.3), // ✅ این خط را حتماً اضافه کن
-        items: [
-          CrystalNavigationBarItem(
-            icon: Icons.home,
-            selectedColor: Colors.blue.shade400,
+        items: const [
+          LiquidGlassBottomBarItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: 'خانه',
           ),
-          CrystalNavigationBarItem(
-            icon: Icons.monetization_on,
-            selectedColor: Colors.blue.shade400,
+          LiquidGlassBottomBarItem(
+            icon: Icons.monetization_on_outlined,
+            activeIcon: Icons.monetization_on,
+            label: 'طلای آب شده',
           ),
-          CrystalNavigationBarItem(
-            icon: Icons.account_balance_wallet,
-            selectedColor: Colors.blue.shade400,
+          LiquidGlassBottomBarItem(
+            icon: Icons.account_balance_wallet_outlined,
+            activeIcon: Icons.account_balance_wallet,
+            label: 'سکه',
           ),
-          CrystalNavigationBarItem(
-            icon: Icons.bar_chart,
-            selectedColor: Colors.blue.shade400,
+          LiquidGlassBottomBarItem(
+            icon: Icons.bar_chart_outlined,
+            activeIcon: Icons.bar_chart,
+            label: 'نمودارها',
           ),
-          CrystalNavigationBarItem(
-            icon: Icons.settings,
-            selectedColor: Colors.blue.shade400,
+          LiquidGlassBottomBarItem(
+            icon: Icons.settings_outlined,
+            activeIcon: Icons.settings,
+            label: 'تنظیمات',
           ),
         ],
+        activeColor: Colors.blue.shade400,
+        height: 74,
+        showLabels: true,
+        barBlurSigma: 16,
+        activeBlurSigma: 24,
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       ),
     );
   }
