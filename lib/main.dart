@@ -82,12 +82,11 @@ String formatToman(double amount) {
 String numberToTomanWords(double amount) {
   final toman = amount / 10;
   final intValue = toman.round();
-  // استفاده از متد toWord روی String
   final words = intValue.toString().toWord();
   return words.toPersianDigit() + ' تومان';
 }
 
-/// ویجت ورودی عدد با نمایش تومانی و حروف زیر آن
+/// ویجت ورودی عدد با جداکننده هزارگان، چپ‌چین و نمایش تومان برای قیمت‌ها
 class NumberInputWithToman extends StatefulWidget {
   final String label;
   final String? initialValue;
@@ -159,8 +158,8 @@ class _NumberInputWithTomanState extends State<NumberInputWithToman> {
             labelStyle: TextStyle(fontFamily: 'Vazir'),
           ),
           keyboardType: widget.keyboardType,
-          textAlign: TextAlign.right,
-          textDirection: TextDirection.rtl,
+          textAlign: TextAlign.left,  // چپ‌چین برای اعداد
+          textDirection: TextDirection.ltr,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
             ThousandsSeparatorInputFormatter(),
@@ -736,7 +735,7 @@ class GoldListScreen extends StatelessWidget {
                 child: Card(
                   margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
-                    title: AutoSizeText('${formatDoubleWithoutTrailingZeros(g.remainingQuantity)} گرم (اصلی: ${formatDoubleWithoutTrailingZeros(g.quantity)})'),
+                    title: AutoSizeText('${formatDoubleWithoutTrailingZeros(g.remainingQuantity)} گرم'),
                     subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       AutoSizeText('فی خرید: ${formatRial(g.purchasePricePerUnit)}', maxLines: 1),
                       AutoSizeText('ارزش فعلی: ${formatRial(currentValue)}', maxLines: 1),
@@ -792,16 +791,16 @@ class GoldListScreen extends StatelessWidget {
                   children: [
                     NumberInputWithToman(
                       label: 'فی خرید (ریال)',
-                      initialValue: formatDoubleWithoutTrailingZeros(price),
+                      initialValue: price == 0 ? '' : formatDoubleWithoutTrailingZeros(price),
                       onSaved: (v) => price = double.parse(v),
                       validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
                     ),
                     TextFormField(
-                      initialValue: formatDoubleWithoutTrailingZeros(weight),
+                      initialValue: weight == 0 ? '' : formatDoubleWithoutTrailingZeros(weight),
                       decoration: InputDecoration(labelText: 'وزن (گرم)'),
                       keyboardType: TextInputType.number,
-                      textAlign: TextAlign.right,
-                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.left,
+                      textDirection: TextDirection.ltr,
                       validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
                       onSaved: (v) => weight = double.parse(v!),
                     ),
@@ -878,8 +877,8 @@ class GoldListScreen extends StatelessWidget {
             controller: qtyCtrl,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: 'مقدار فروش (گرم)'),
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.ltr,
           ),
           NumberInputWithToman(
             label: 'قیمت فروش هر گرم (ریال)',
@@ -941,7 +940,7 @@ class CoinListScreen extends StatelessWidget {
                 child: Card(
                   margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
-                    title: AutoSizeText('${c.remainingCount} ${coinName(c.coinType)} (اصلی: ${c.count})'),
+                    title: AutoSizeText('${c.remainingCount} ${coinName(c.coinType)}'),
                     subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       AutoSizeText('فی خرید: ${formatRial(c.purchasePricePerUnit)}'),
                       AutoSizeText('ارزش فعلی: ${formatRial(currentValue)}'),
@@ -1004,16 +1003,16 @@ class CoinListScreen extends StatelessWidget {
                     ),
                     NumberInputWithToman(
                       label: 'فی خرید (ریال)',
-                      initialValue: formatDoubleWithoutTrailingZeros(price),
+                      initialValue: price == 0 ? '' : formatDoubleWithoutTrailingZeros(price),
                       onSaved: (v) => price = double.parse(v),
                       validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
                     ),
                     TextFormField(
-                      initialValue: count.toString(),
+                      initialValue: count == 0 ? '' : count.toString(),
                       decoration: InputDecoration(labelText: 'تعداد'),
                       keyboardType: TextInputType.number,
-                      textAlign: TextAlign.right,
-                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.left,
+                      textDirection: TextDirection.ltr,
                       validator: (v) => v!.isEmpty ? 'وارد کنید' : null,
                       onSaved: (v) => count = int.parse(v!),
                     ),
@@ -1091,8 +1090,8 @@ class CoinListScreen extends StatelessWidget {
             controller: cntCtrl,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: 'تعداد فروش'),
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.ltr,
           ),
           NumberInputWithToman(
             label: 'قیمت فروش هر عدد (ریال)',
@@ -1245,8 +1244,8 @@ class SettingsScreen extends StatelessWidget {
             initialValue: basePrices[key] == 0 ? '' : formatDoubleWithoutTrailingZeros(basePrices[key] ?? 0),
             keyboardType: TextInputType.number,
             decoration: InputDecoration(hintText: 'ریال', isDense: true),
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.ltr,
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
               ThousandsSeparatorInputFormatter(),
