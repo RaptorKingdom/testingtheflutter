@@ -1328,37 +1328,38 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true, // محتوا تا زیر منو ادامه پیدا می‌کند (فضای خالی حذف می‌شود)
       body: _screens[_selectedIndex],
       bottomNavigationBar: CrystalNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        backgroundColor: Colors.black.withOpacity(0.1),
-        selectedItemColor: Colors.white,
+        backgroundColor: Colors.black.withOpacity(0.15),
+        selectedItemColor: Colors.amber.shade300, // رنگ انتخاب شده (طلایی)
         unselectedItemColor: Colors.white70,
         enableFloatingNavBar: true,
-        borderRadius: 32, // اصلاح: عدد به جای BorderRadius
+        borderRadius: 32,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        indicatorColor: Colors.white.withOpacity(0.2),
+        indicatorColor: Colors.amber.shade300.withOpacity(0.3), // نشان‌گر انتخاب
         items: [
           CrystalNavigationBarItem(
             icon: Icons.home,
-            selectedColor: Colors.white,
+            selectedColor: Colors.amber.shade300,
           ),
           CrystalNavigationBarItem(
             icon: Icons.monetization_on,
-            selectedColor: Colors.white,
+            selectedColor: Colors.amber.shade300,
           ),
           CrystalNavigationBarItem(
             icon: Icons.account_balance_wallet,
-            selectedColor: Colors.white,
+            selectedColor: Colors.amber.shade300,
           ),
           CrystalNavigationBarItem(
             icon: Icons.bar_chart,
-            selectedColor: Colors.white,
+            selectedColor: Colors.amber.shade300,
           ),
           CrystalNavigationBarItem(
             icon: Icons.settings,
-            selectedColor: Colors.white,
+            selectedColor: Colors.amber.shade300,
           ),
         ],
       ),
