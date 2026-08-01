@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:ui' as ui;
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -19,21 +20,11 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:persian_datetimepickers/persian_datetimepickers.dart';
 import 'package:persian_number_utility/persian_number_utility.dart';
 import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 part 'main.g.dart';
-
-// -------------------- قیمت‌های پایه ۱۴۰۵/۱/۱ (به ریال) --------------------
-const Map<String, double> basePrices140501 = {
-  'gold_18': 183065000,
-  'gold_24': 244060000,
-  'gold_ons': 46850000, // دلار - نیازی به ضرب در ۱۰ ندارد
-  'gold_mazneh': 793000000,
-  'coin_old': 1815000000,
-  'coin_new': 1855000000,
-  'coin_half': 985000000,
-  'coin_quarter': 560000000,
-  'coin_1g': 280000000,
-};
 
 // -------------------- Helpers --------------------
 String formatRial(double amount) {
@@ -416,215 +407,6 @@ class ApiService {
   }
 }
 
-// -------------------- Theme Provider --------------------
-class ThemeProvider extends ChangeNotifier {
-  final SharedPreferences _prefs;
-
-  // رنگ‌ها (پیش‌فرض تم روشن)
-  Color _primaryColor = Colors.amber;
-  Color _secondaryColor = Colors.blue;
-  Color _backgroundColor = Colors.white;
-  Color _surfaceColor = Colors.white;
-  Color _textColor = Colors.black;
-
-  // تنظیمات Bottom Navigation Bar
-  double _navBarOpacity = 0.15;
-  double _navBarBorderRadius = 32;
-  double _navBarHeight = 64;
-  Color _navBarSelectedColor = Colors.blue;
-  Color _navBarUnselectedColor = Colors.grey.shade700;
-  Color _navBarIndicatorColor = Colors.blue.withOpacity(0.3);
-  double _navBarMarginHorizontal = 20;
-  double _navBarMarginVertical = 10;
-  bool _navBarFloating = true;
-
-  ThemeProvider(this._prefs) {
-    _loadTheme();
-  }
-
-  // Getters
-  Color get primaryColor => _primaryColor;
-  Color get secondaryColor => _secondaryColor;
-  Color get backgroundColor => _backgroundColor;
-  Color get surfaceColor => _surfaceColor;
-  Color get textColor => _textColor;
-
-  double get navBarOpacity => _navBarOpacity;
-  double get navBarBorderRadius => _navBarBorderRadius;
-  double get navBarHeight => _navBarHeight;
-  Color get navBarSelectedColor => _navBarSelectedColor;
-  Color get navBarUnselectedColor => _navBarUnselectedColor;
-  Color get navBarIndicatorColor => _navBarIndicatorColor;
-  double get navBarMarginHorizontal => _navBarMarginHorizontal;
-  double get navBarMarginVertical => _navBarMarginVertical;
-  bool get navBarFloating => _navBarFloating;
-
-  // Setters
-  Future<void> setPrimaryColor(Color color) async {
-    _primaryColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setSecondaryColor(Color color) async {
-    _secondaryColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setBackgroundColor(Color color) async {
-    _backgroundColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setSurfaceColor(Color color) async {
-    _surfaceColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setTextColor(Color color) async {
-    _textColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarOpacity(double value) async {
-    _navBarOpacity = value;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarBorderRadius(double value) async {
-    _navBarBorderRadius = value;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarHeight(double value) async {
-    _navBarHeight = value;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarSelectedColor(Color color) async {
-    _navBarSelectedColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarUnselectedColor(Color color) async {
-    _navBarUnselectedColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarIndicatorColor(Color color) async {
-    _navBarIndicatorColor = color;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarMarginHorizontal(double value) async {
-    _navBarMarginHorizontal = value;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarMarginVertical(double value) async {
-    _navBarMarginVertical = value;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  Future<void> setNavBarFloating(bool value) async {
-    _navBarFloating = value;
-    await _saveTheme();
-    notifyListeners();
-  }
-
-  // بارگذاری از SharedPreferences
-  void _loadTheme() {
-    try {
-      // رنگ‌ها
-      final primaryHex = _prefs.getString('theme_primaryColor');
-      if (primaryHex != null) _primaryColor = Color(int.parse(primaryHex));
-      
-      final secondaryHex = _prefs.getString('theme_secondaryColor');
-      if (secondaryHex != null) _secondaryColor = Color(int.parse(secondaryHex));
-      
-      final bgHex = _prefs.getString('theme_backgroundColor');
-      if (bgHex != null) _backgroundColor = Color(int.parse(bgHex));
-      
-      final surfaceHex = _prefs.getString('theme_surfaceColor');
-      if (surfaceHex != null) _surfaceColor = Color(int.parse(surfaceHex));
-      
-      final textHex = _prefs.getString('theme_textColor');
-      if (textHex != null) _textColor = Color(int.parse(textHex));
-
-      // تنظیمات NavBar
-      _navBarOpacity = _prefs.getDouble('navbar_opacity') ?? 0.15;
-      _navBarBorderRadius = _prefs.getDouble('navbar_borderRadius') ?? 32;
-      _navBarHeight = _prefs.getDouble('navbar_height') ?? 64;
-      _navBarMarginHorizontal = _prefs.getDouble('navbar_marginH') ?? 20;
-      _navBarMarginVertical = _prefs.getDouble('navbar_marginV') ?? 10;
-      _navBarFloating = _prefs.getBool('navbar_floating') ?? true;
-
-      final selectedHex = _prefs.getString('navbar_selectedColor');
-      if (selectedHex != null) _navBarSelectedColor = Color(int.parse(selectedHex));
-      
-      final unselectedHex = _prefs.getString('navbar_unselectedColor');
-      if (unselectedHex != null) _navBarUnselectedColor = Color(int.parse(unselectedHex));
-      
-      final indicatorHex = _prefs.getString('navbar_indicatorColor');
-      if (indicatorHex != null) _navBarIndicatorColor = Color(int.parse(indicatorHex));
-      
-    } catch (e) {
-      // در صورت خطا از مقادیر پیش‌فرض استفاده می‌کنیم
-    }
-  }
-
-  Future<void> _saveTheme() async {
-    await _prefs.setString('theme_primaryColor', _primaryColor.value.toString());
-    await _prefs.setString('theme_secondaryColor', _secondaryColor.value.toString());
-    await _prefs.setString('theme_backgroundColor', _backgroundColor.value.toString());
-    await _prefs.setString('theme_surfaceColor', _surfaceColor.value.toString());
-    await _prefs.setString('theme_textColor', _textColor.value.toString());
-
-    await _prefs.setDouble('navbar_opacity', _navBarOpacity);
-    await _prefs.setDouble('navbar_borderRadius', _navBarBorderRadius);
-    await _prefs.setDouble('navbar_height', _navBarHeight);
-    await _prefs.setDouble('navbar_marginH', _navBarMarginHorizontal);
-    await _prefs.setDouble('navbar_marginV', _navBarMarginVertical);
-    await _prefs.setBool('navbar_floating', _navBarFloating);
-
-    await _prefs.setString('navbar_selectedColor', _navBarSelectedColor.value.toString());
-    await _prefs.setString('navbar_unselectedColor', _navBarUnselectedColor.value.toString());
-    await _prefs.setString('navbar_indicatorColor', _navBarIndicatorColor.value.toString());
-  }
-
-  // بازنشانی به حالت پیش‌فرض
-  Future<void> resetToDefault() async {
-    _primaryColor = Colors.amber;
-    _secondaryColor = Colors.blue;
-    _backgroundColor = Colors.white;
-    _surfaceColor = Colors.white;
-    _textColor = Colors.black;
-    _navBarOpacity = 0.15;
-    _navBarBorderRadius = 32;
-    _navBarHeight = 64;
-    _navBarSelectedColor = Colors.blue;
-    _navBarUnselectedColor = Colors.grey.shade700;
-    _navBarIndicatorColor = Colors.blue.withOpacity(0.3);
-    _navBarMarginHorizontal = 20;
-    _navBarMarginVertical = 10;
-    _navBarFloating = true;
-    await _saveTheme();
-    notifyListeners();
-  }
-}
-
 // -------------------- Providers --------------------
 class PriceProvider extends ChangeNotifier {
   Map<String, PriceResponse> _prices = {};
@@ -703,16 +485,48 @@ class PriceProvider extends ChangeNotifier {
 class SettingsProvider extends ChangeNotifier {
   double _bankInterestRate = 26.0;
   int _autoUpdateInterval = 300;
+  Color _secondaryColor = Colors.amber;
   double get bankInterestRate => _bankInterestRate;
   int get autoUpdateInterval => _autoUpdateInterval;
+  Color get secondaryColor => _secondaryColor;
   final SharedPreferences _prefs;
   SettingsProvider(this._prefs) { _loadSettings(); }
   void _loadSettings() {
     _bankInterestRate = _prefs.getDouble('bankInterestRate') ?? 26.0;
     _autoUpdateInterval = _prefs.getInt('autoUpdateInterval') ?? 300;
+    final colorStr = _prefs.getString('secondaryColor');
+    if (colorStr != null) {
+      try {
+        _secondaryColor = Color(int.parse(colorStr));
+      } catch (_) {}
+    }
   }
   Future<void> setBankInterestRate(double v) async { _bankInterestRate = v; await _prefs.setDouble('bankInterestRate', v); notifyListeners(); }
   Future<void> setAutoUpdateInterval(int s) async { _autoUpdateInterval = s; await _prefs.setInt('autoUpdateInterval', s); notifyListeners(); }
+  Future<void> setSecondaryColor(Color c) async {
+    _secondaryColor = c;
+    await _prefs.setString('secondaryColor', c.value.toString());
+    notifyListeners();
+  }
+}
+
+/// BasePriceProvider با قیمت‌های ثابت ۱۴۰۵/۱/۱
+class BasePriceProvider extends ChangeNotifier {
+  Map<String, double> _basePrices = {};
+  BasePriceProvider() {
+    _basePrices = {
+      'gold_18': 183065000,
+      'gold_24': 244060000,
+      'gold_ons': 46850000, // دلار
+      'gold_mazneh': 793000000,
+      'coin_old': 1815000000,
+      'coin_new': 1855000000,
+      'coin_half': 985000000,
+      'coin_quarter': 560000000,
+      'coin_1g': 280000000,
+    };
+  }
+  Map<String, double> get basePrices => UnmodifiableMapView(_basePrices);
 }
 
 class DataProvider extends ChangeNotifier {
@@ -799,6 +613,121 @@ class DataProvider extends ChangeNotifier {
     }
     return profit;
   }
+
+  // Export: تمام داده‌ها را به صورت JSON برمی‌گرداند
+  Future<Map<String, dynamic>> exportAllData() async {
+    final goldData = goldBox.values.map((g) => {
+      'id': g.id,
+      'type': g.type,
+      'purchaseDate': g.purchaseDate.toIso8601String(),
+      'purchasePricePerUnit': g.purchasePricePerUnit,
+      'quantity': g.quantity,
+      'description': g.description,
+      'remainingQuantity': g.remainingQuantity,
+    }).toList();
+    final coinData = coinBox.values.map((c) => {
+      'id': c.id,
+      'coinType': c.coinType,
+      'purchaseDate': c.purchaseDate.toIso8601String(),
+      'purchasePricePerUnit': c.purchasePricePerUnit,
+      'count': c.count,
+      'description': c.description,
+      'remainingCount': c.remainingCount,
+    }).toList();
+    final saleData = saleBox.values.map((s) => {
+      'id': s.id,
+      'lotId': s.lotId,
+      'saleDate': s.saleDate.toIso8601String(),
+      'salePricePerUnit': s.salePricePerUnit,
+      'quantity': s.quantity,
+      'isGold': s.isGold,
+      'coinType': s.coinType,
+    }).toList();
+    return {
+      'goldTransactions': goldData,
+      'coinTransactions': coinData,
+      'saleTransactions': saleData,
+      'exportDate': DateTime.now().toIso8601String(),
+    };
+  }
+
+  // Import: پاک کردن داده‌های فعلی و جایگزینی با داده‌های جدید
+  Future<void> importData(Map<String, dynamic> data) async {
+    await goldBox.clear();
+    await coinBox.clear();
+    await saleBox.clear();
+
+    final goldList = data['goldTransactions'] as List? ?? [];
+    for (var item in goldList) {
+      final g = GoldTransaction(
+        id: item['id'],
+        type: item['type'],
+        purchaseDate: DateTime.parse(item['purchaseDate']),
+        purchasePricePerUnit: (item['purchasePricePerUnit'] as num).toDouble(),
+        quantity: (item['quantity'] as num).toDouble(),
+        description: item['description'] ?? '',
+        remainingQuantity: (item['remainingQuantity'] as num).toDouble(),
+      );
+      await goldBox.add(g);
+    }
+
+    final coinList = data['coinTransactions'] as List? ?? [];
+    for (var item in coinList) {
+      final c = CoinTransaction(
+        id: item['id'],
+        coinType: item['coinType'],
+        purchaseDate: DateTime.parse(item['purchaseDate']),
+        purchasePricePerUnit: (item['purchasePricePerUnit'] as num).toDouble(),
+        count: item['count'],
+        description: item['description'] ?? '',
+        remainingCount: item['remainingCount'],
+      );
+      await coinBox.add(c);
+    }
+
+    final saleList = data['saleTransactions'] as List? ?? [];
+    for (var item in saleList) {
+      final s = SaleTransaction(
+        id: item['id'],
+        lotId: item['lotId'],
+        saleDate: DateTime.parse(item['saleDate']),
+        salePricePerUnit: (item['salePricePerUnit'] as num).toDouble(),
+        quantity: (item['quantity'] as num).toDouble(),
+        isGold: item['isGold'],
+        coinType: item['coinType'],
+      );
+      await saleBox.add(s);
+    }
+    notifyListeners();
+  }
+}
+
+// -------------------- ویجت AppBar بلوری --------------------
+class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  final List<Widget>? actions;
+
+  const GlassAppBar({Key? key, required this.title, this.actions}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AppBar(
+          title: Text(title),
+          centerTitle: true,
+          backgroundColor: Colors.black.withOpacity(0.2),
+          elevation: 0,
+          actions: actions,
+          systemOverlayStyle: SystemUiOverlayStyle.light,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
 
 // -------------------- Screens --------------------
@@ -808,7 +737,8 @@ class HomeScreen extends StatelessWidget {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
     final settings = Provider.of<SettingsProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final basePriceProvider = Provider.of<BasePriceProvider>(context);
+    final basePrices = basePriceProvider.basePrices;
 
     final DateTime startOf1405 = DateTime(2026, 3, 21);
     final DateTime endOf1404 = DateTime(2026, 3, 20);
@@ -831,12 +761,8 @@ class HomeScreen extends StatelessWidget {
     final realizedProfit = dataProvider.totalRealizedProfit;
 
     double base1405Cost = 0;
-    for (var g in dataProvider.activeGold) {
-      base1405Cost += (basePrices140501[g.type] ?? 0) * g.remainingQuantity;
-    }
-    for (var c in dataProvider.activeCoins) {
-      base1405Cost += (basePrices140501[c.coinType] ?? 0) * c.remainingCount;
-    }
+    for (var g in dataProvider.activeGold) base1405Cost += (basePrices[g.type] ?? 0) * g.remainingQuantity;
+    for (var c in dataProvider.activeCoins) base1405Cost += (basePrices[c.coinType] ?? 0) * c.remainingCount;
     final days1405 = DateTime.now().difference(startOf1405).inDays;
     final bankInterestCost = base1405Cost * settings.bankInterestRate * days1405 / 36500;
     final profitFrom1405 = totalAssets - base1405Cost - bankInterestCost;
@@ -844,67 +770,66 @@ class HomeScreen extends StatelessWidget {
     double realized1404 = 0;
     for (var g in dataProvider.goldBox.values) {
       if (g.purchaseDate.isAfter(endOf1404)) continue;
-      realized1404 += ((basePrices140501[g.type] ?? 0) - g.purchasePricePerUnit) * g.quantity;
+      realized1404 += ((basePrices[g.type] ?? 0) - g.purchasePricePerUnit) * g.quantity;
     }
     for (var c in dataProvider.coinBox.values) {
       if (c.purchaseDate.isAfter(endOf1404)) continue;
-      realized1404 += ((basePrices140501[c.coinType] ?? 0) - c.purchasePricePerUnit) * c.count;
+      realized1404 += ((basePrices[c.coinType] ?? 0) - c.purchasePricePerUnit) * c.count;
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('خلاصه دارایی'),
-        centerTitle: true,
-        backgroundColor: themeProvider.primaryColor,
-        foregroundColor: themeProvider.textColor,
-      ),
+      appBar: GlassAppBar(title: 'خلاصه دارایی'),
       body: RefreshIndicator(
         onRefresh: priceProvider.fetchPrices,
-        child: ListView(padding: EdgeInsets.all(16), children: [
-          Card(
-            child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
-              Text('آخرین به‌روزرسانی: ${priceProvider.lastUpdated.year > 2000 ? formatJalaliDate(priceProvider.lastUpdated) + ' ' + DateFormat('HH:mm').format(priceProvider.lastUpdated) : '---'}',
-                  style: Theme.of(context).textTheme.bodySmall),
-              SizedBox(height: 16),
-              _summaryRow('ارزش کل دارایی', formatRial(totalAssets), Colors.green),
-              _summaryRow('سود محقق‌نشده', formatRial(unrealizedProfit), unrealizedProfit >= 0 ? Colors.green : Colors.red),
-              _summaryRow('سود محقق‌شده (فروش‌ها)', formatRial(realizedProfit), realizedProfit >= 0 ? Colors.green : Colors.red),
-            ])),
-          ),
-          SizedBox(height: 12),
-          Card(
-            child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
-              Text('عملکرد از ابتدای ۱۴۰۵ (با کسر هزینه فرصت بانکی)', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              AutoSizeText(formatRial(profitFrom1405), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: profitFrom1405 >= 0 ? Colors.green : Colors.red), maxLines: 1),
-            ])),
-          ),
-          SizedBox(height: 12),
-          Card(
-            child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
-              Text('سود محقق شده پایان ۱۴۰۴', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              AutoSizeText(formatRial(realized1404), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: realized1404 >= 0 ? Colors.green : Colors.red), maxLines: 1),
-            ])),
-          ),
-          SizedBox(height: 16),
-          Text('قیمت‌های لحظه‌ای (ریال)', style: Theme.of(context).textTheme.titleMedium),
-          GridView.count(
-            shrinkWrap: true, physics: NeverScrollableScrollPhysics(), crossAxisCount: 2, childAspectRatio: 2.5,
-            children: priceProvider.prices.entries.map((e) {
-              final price = e.value.currentPrice ?? 0;
-              return Card(
-                child: Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: Padding(padding: EdgeInsets.all(8), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    AutoSizeText(goldTypeName(e.key), style: TextStyle(fontWeight: FontWeight.bold), maxLines: 1),
-                    AutoSizeText(formatRial(price), maxLines: 1),
-                  ])),
-                ),
-              );
-            }).toList(),
-          ),
-        ]),
+        child: ListView(
+          padding: EdgeInsets.only(bottom: 100, left: 16, right: 16, top: 16),
+          children: [
+            Card(
+              child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
+                Text('آخرین به‌روزرسانی: ${priceProvider.lastUpdated.year > 2000 ? formatJalaliDate(priceProvider.lastUpdated) + ' ' + DateFormat('HH:mm').format(priceProvider.lastUpdated) : '---'}',
+                    style: Theme.of(context).textTheme.bodySmall),
+                SizedBox(height: 16),
+                _summaryRow('ارزش کل دارایی', formatRial(totalAssets), Colors.green),
+                _summaryRow('سود محقق‌نشده', formatRial(unrealizedProfit), unrealizedProfit >= 0 ? Colors.green : Colors.red),
+                _summaryRow('سود محقق‌شده (فروش‌ها)', formatRial(realizedProfit), realizedProfit >= 0 ? Colors.green : Colors.red),
+              ])),
+            ),
+            SizedBox(height: 12),
+            Card(
+              child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
+                Text('عملکرد از ابتدای ۱۴۰۵ (با کسر هزینه فرصت بانکی)', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                AutoSizeText(formatRial(profitFrom1405), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: profitFrom1405 >= 0 ? Colors.green : Colors.red), maxLines: 1),
+              ])),
+            ),
+            SizedBox(height: 12),
+            Card(
+              child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
+                Text('سود محقق شده پایان ۱۴۰۴', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                AutoSizeText(formatRial(realized1404), style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: realized1404 >= 0 ? Colors.green : Colors.red), maxLines: 1),
+              ])),
+            ),
+            SizedBox(height: 16),
+            Text('قیمت‌های لحظه‌ای (ریال)', style: Theme.of(context).textTheme.titleMedium),
+            GridView.count(
+              shrinkWrap: true, physics: NeverScrollableScrollPhysics(), crossAxisCount: 2, childAspectRatio: 2.5,
+              children: priceProvider.prices.entries.map((e) {
+                final price = e.value.currentPrice ?? 0;
+                return Card(
+                  child: Directionality(
+                    textDirection: TextDirection.rtl,
+                    child: Padding(padding: EdgeInsets.all(8), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      AutoSizeText(goldTypeName(e.key), style: TextStyle(fontWeight: FontWeight.bold), maxLines: 1),
+                      AutoSizeText(formatRial(price), maxLines: 1),
+                    ])),
+                  ),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 80), // فضای اضافی برای جلوگیری از همپوشانی با منو
+          ],
+        ),
       ),
     );
   }
@@ -923,17 +848,13 @@ class GoldListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final activeGold = dataProvider.activeGold;
     double totalWeight = activeGold.fold(0, (s, g) => s + g.remainingQuantity);
     double totalPaid = activeGold.fold(0, (s, g) => s + g.purchasePricePerUnit * g.remainingQuantity);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('طلای آب شده'),
-        centerTitle: true,
-        backgroundColor: themeProvider.primaryColor,
-        foregroundColor: themeProvider.textColor,
+      appBar: GlassAppBar(
+        title: 'طلای آب شده',
         actions: [IconButton(icon: Icon(Icons.add), onPressed: () => _showAddEditGoldDialog(context, null))],
       ),
       body: Column(children: [
@@ -945,10 +866,9 @@ class GoldListScreen extends StatelessWidget {
           ])),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: activeGold.length,
-            itemBuilder: (ctx, i) {
-              final g = activeGold[i];
+          child: ListView(
+            padding: EdgeInsets.only(bottom: 100),
+            children: activeGold.map((g) {
               final cp = priceProvider.prices[g.type]?.currentPrice ?? 0;
               final paid = g.purchasePricePerUnit * g.remainingQuantity;
               final currentValue = cp * g.remainingQuantity;
@@ -984,7 +904,7 @@ class GoldListScreen extends StatelessWidget {
                   ),
                 ),
               );
-            },
+            }).toList(),
           ),
         ),
       ]),
@@ -1132,7 +1052,6 @@ class CoinListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
     final activeCoins = dataProvider.activeCoins;
     int totalCoins = activeCoins.fold(0, (s, c) => s + c.remainingCount);
     int rub = activeCoins.where((c) => c.coinType == 'coin_quarter').fold(0, (s, c) => s + c.remainingCount);
@@ -1141,11 +1060,8 @@ class CoinListScreen extends StatelessWidget {
     double totalPaid = activeCoins.fold(0, (s, c) => s + c.purchasePricePerUnit * c.remainingCount);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('سکه‌ها'),
-        centerTitle: true,
-        backgroundColor: themeProvider.primaryColor,
-        foregroundColor: themeProvider.textColor,
+      appBar: GlassAppBar(
+        title: 'سکه‌ها',
         actions: [IconButton(icon: Icon(Icons.add), onPressed: () => _showAddEditCoinDialog(context, null))],
       ),
       body: Column(children: [
@@ -1158,10 +1074,9 @@ class CoinListScreen extends StatelessWidget {
         ]))),
         Card(margin: EdgeInsets.symmetric(horizontal: 8), child: ListTile(title: Text('مجموع مبلغ پرداختی'), trailing: AutoSizeText(formatRial(totalPaid), style: TextStyle(fontWeight: FontWeight.bold)))),
         Expanded(
-          child: ListView.builder(
-            itemCount: activeCoins.length,
-            itemBuilder: (ctx, i) {
-              final c = activeCoins[i];
+          child: ListView(
+            padding: EdgeInsets.only(bottom: 100),
+            children: activeCoins.map((c) {
               final cp = priceProvider.prices[c.coinType]?.currentPrice ?? 0;
               final paid = c.purchasePricePerUnit * c.remainingCount;
               final currentValue = cp * c.remainingCount;
@@ -1191,7 +1106,7 @@ class CoinListScreen extends StatelessWidget {
                   ),
                 ),
               );
-            },
+            }).toList(),
           ),
         ),
       ]),
@@ -1353,7 +1268,6 @@ class ChartsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceProvider = Provider.of<PriceProvider>(context);
     final dataProvider = Provider.of<DataProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
 
     final activeGold = dataProvider.activeGold;
     final activeCoins = dataProvider.activeCoins;
@@ -1397,40 +1311,39 @@ class ChartsScreen extends StatelessWidget {
     spots.add(FlSpot(DateTime.now().millisecondsSinceEpoch.toDouble(), total));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('نمودارها'),
-        centerTitle: true,
-        backgroundColor: themeProvider.primaryColor,
-        foregroundColor: themeProvider.textColor,
+      appBar: GlassAppBar(title: 'نمودارها'),
+      body: ListView(
+        padding: EdgeInsets.only(bottom: 100, left: 16, right: 16, top: 16),
+        children: [
+          Text('توزیع دارایی', style: Theme.of(context).textTheme.titleMedium),
+          SizedBox(height: 10),
+          Container(height: 250, child: PieChart(PieChartData(sections: sections, sectionsSpace: 2, centerSpaceRadius: 40))),
+          SizedBox(height: 20),
+          Text('سود/زیان هر لات', style: Theme.of(context).textTheme.titleMedium),
+          SizedBox(height: 10),
+          Container(height: 300, child: BarChart(BarChartData(barGroups: bars, titlesData: FlTitlesData(show: false), borderData: FlBorderData(show: false), gridData: FlGridData(show: false)))),
+          SizedBox(height: 20),
+          Text('روند سرمایه‌گذاری (هزینه تجمعی)', style: Theme.of(context).textTheme.titleMedium),
+          SizedBox(height: 10),
+          Container(height: 200, child: LineChart(LineChartData(
+            lineBarsData: [
+              LineChartBarData(spots: spots, isCurved: true, color: Colors.blue, barWidth: 3, dotData: FlDotData(show: false), belowBarData: BarAreaData(show: true, color: Colors.blue.withOpacity(0.1))),
+            ],
+            titlesData: FlTitlesData(
+              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
+                final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
+                return AutoSizeText(formatJalaliDate(dt).substring(5), style: TextStyle(fontSize: 10));
+              }, reservedSize: 28)),
+              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 60, getTitlesWidget: (value, meta) {
+                return AutoSizeText(formatRial(value), style: TextStyle(fontSize: 10));
+              })),
+            ),
+            borderData: FlBorderData(show: true),
+            gridData: FlGridData(show: true),
+          ))),
+          SizedBox(height: 80),
+        ],
       ),
-      body: ListView(padding: EdgeInsets.all(16), children: [
-        Text('توزیع دارایی', style: Theme.of(context).textTheme.titleMedium),
-        SizedBox(height: 10),
-        Container(height: 250, child: PieChart(PieChartData(sections: sections, sectionsSpace: 2, centerSpaceRadius: 40))),
-        SizedBox(height: 20),
-        Text('سود/زیان هر لات', style: Theme.of(context).textTheme.titleMedium),
-        SizedBox(height: 10),
-        Container(height: 300, child: BarChart(BarChartData(barGroups: bars, titlesData: FlTitlesData(show: false), borderData: FlBorderData(show: false), gridData: FlGridData(show: false)))),
-        SizedBox(height: 20),
-        Text('روند سرمایه‌گذاری (هزینه تجمعی)', style: Theme.of(context).textTheme.titleMedium),
-        SizedBox(height: 10),
-        Container(height: 200, child: LineChart(LineChartData(
-          lineBarsData: [
-            LineChartBarData(spots: spots, isCurved: true, color: Colors.blue, barWidth: 3, dotData: FlDotData(show: false), belowBarData: BarAreaData(show: true, color: Colors.blue.withOpacity(0.1))),
-          ],
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
-              final dt = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-              return AutoSizeText(formatJalaliDate(dt).substring(5), style: TextStyle(fontSize: 10));
-            }, reservedSize: 28)),
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 60, getTitlesWidget: (value, meta) {
-              return AutoSizeText(formatRial(value), style: TextStyle(fontSize: 10));
-            })),
-          ),
-          borderData: FlBorderData(show: true),
-          gridData: FlGridData(show: true),
-        ))),
-      ]),
     );
   }
 
@@ -1448,472 +1361,168 @@ class ChartsScreen extends StatelessWidget {
 
 class _Lot { final DateTime date; final double cost; _Lot(this.date, this.cost); }
 
-// -------------------- ColorPicker Dialog (Full HSV) --------------------
-class ColorPickerDialog extends StatefulWidget {
-  final Color initialColor;
-  final ValueChanged<Color> onColorSelected;
-
-  const ColorPickerDialog({
-    Key? key,
-    required this.initialColor,
-    required this.onColorSelected,
-  }) : super(key: key);
-
+class SettingsScreen extends StatefulWidget {
   @override
-  _ColorPickerDialogState createState() => _ColorPickerDialogState();
+  _SettingsScreenState createState() => _SettingsScreenState();
 }
 
-class _ColorPickerDialogState extends State<ColorPickerDialog> {
-  late double _hue;
-  late double _saturation;
-  late double _brightness;
-
-  @override
-  void initState() {
-    super.initState();
-    final hsv = HSLColor.fromColor(widget.initialColor);
-    _hue = hsv.hue;
-    _saturation = hsv.saturation;
-    _brightness = hsv.lightness;
-  }
+class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isExporting = false;
+  bool _isImporting = false;
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('انتخاب رنگ'),
-      content: Container(
-        width: 300,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Preview
-            Container(
-              height: 60,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: HSLColor.fromAHSL(1, _hue, _saturation, _brightness).toColor(),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-            ),
-            SizedBox(height: 16),
-            // Hue slider
-            Row(
-              children: [
-                SizedBox(width: 60, child: Text('رنگ', style: TextStyle(fontWeight: FontWeight.w500))),
-                Expanded(
-                  child: Slider(
-                    value: _hue,
-                    min: 0,
-                    max: 360,
-                    onChanged: (v) => setState(() => _hue = v),
-                    activeColor: Colors.amber,
-                  ),
-                ),
-              ],
-            ),
-            // Saturation slider
-            Row(
-              children: [
-                SizedBox(width: 60, child: Text('اشباع', style: TextStyle(fontWeight: FontWeight.w500))),
-                Expanded(
-                  child: Slider(
-                    value: _saturation,
-                    min: 0,
-                    max: 1,
-                    onChanged: (v) => setState(() => _saturation = v),
-                    activeColor: Colors.amber,
-                  ),
-                ),
-              ],
-            ),
-            // Brightness slider
-            Row(
-              children: [
-                SizedBox(width: 60, child: Text('روشنی', style: TextStyle(fontWeight: FontWeight.w500))),
-                Expanded(
-                  child: Slider(
-                    value: _brightness,
-                    min: 0,
-                    max: 1,
-                    onChanged: (v) => setState(() => _brightness = v),
-                    activeColor: Colors.amber,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('لغو'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final color = HSLColor.fromAHSL(1, _hue, _saturation, _brightness).toColor();
-            widget.onColorSelected(color);
-            Navigator.pop(context);
-          },
-          child: Text('انتخاب'),
-        ),
-      ],
-    );
-  }
-}
-
-// -------------------- صفحه تنظیمات تم --------------------
-class ThemeSettingsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
+    final priceProvider = Provider.of<PriceProvider>(context);
+    final dataProvider = Provider.of<DataProvider>(context);
+    final secondaryColor = settings.secondaryColor;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('تنظیمات ظاهری'),
-        backgroundColor: themeProvider.primaryColor,
-        foregroundColor: themeProvider.textColor,
-      ),
+      appBar: GlassAppBar(title: 'تنظیمات'),
       body: ListView(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.only(bottom: 100, left: 16, right: 16, top: 16),
         children: [
-          // ---------- توضیحات ----------
           Card(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Text(
-                    '🎨 شخصی‌سازی کامل ظاهر برنامه',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'در این بخش می‌توانید تمام رنگ‌های برنامه و همچنین ظاهر منوی پایین را به دلخواه خود تغییر دهید.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+            child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
+              Text('نرخ سود بانکی'),
+              Slider(value: settings.bankInterestRate, min: 0, max: 50, divisions: 100, label: '${settings.bankInterestRate.toStringAsFixed(1)}%', onChanged: (v) => settings.setBankInterestRate(v)),
+              Text('${settings.bankInterestRate.toStringAsFixed(1)}%'),
+            ])),
           ),
-
-          SizedBox(height: 16),
-          Text('🎨 رنگ‌های اصلی برنامه', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-
-          _buildColorPicker(
-            context,
-            title: 'رنگ اصلی (Primary)',
-            description: 'رنگ نوار بالای صفحات و دکمه‌های اصلی',
-            currentColor: themeProvider.primaryColor,
-            onColorSelected: (color) => themeProvider.setPrimaryColor(color),
+          Card(
+            child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
+              Text('فاصله به‌روزرسانی خودکار (ثانیه)'),
+              Slider(value: settings.autoUpdateInterval.toDouble(), min: 30, max: 600, divisions: (600-30)~/10, label: '${settings.autoUpdateInterval}', onChanged: (v) { settings.setAutoUpdateInterval(v.toInt()); priceProvider.setAutoUpdateInterval(v.toInt()); }),
+              Text('${settings.autoUpdateInterval} ثانیه'),
+            ])),
           ),
-
-          _buildColorPicker(
-            context,
-            title: 'رنگ ثانویه (Secondary)',
-            description: 'رنگ منوی پایین در حالت انتخاب',
-            currentColor: themeProvider.secondaryColor,
-            onColorSelected: (color) => themeProvider.setSecondaryColor(color),
-          ),
-
-          _buildColorPicker(
-            context,
-            title: 'رنگ پس‌زمینه',
-            description: 'رنگ پس‌زمینه کلی برنامه',
-            currentColor: themeProvider.backgroundColor,
-            onColorSelected: (color) => themeProvider.setBackgroundColor(color),
-          ),
-
-          _buildColorPicker(
-            context,
-            title: 'رنگ متن',
-            description: 'رنگ نوشته‌های برنامه',
-            currentColor: themeProvider.textColor,
-            onColorSelected: (color) => themeProvider.setTextColor(color),
-          ),
-
-          SizedBox(height: 24),
-          Text('📱 تنظیمات منوی پایین (Bottom Navigation Bar)',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8),
-
-          _buildSliderSetting(
-            title: 'شفافیت پس‌زمینه',
-            description: 'میزان شفافیت منوی پایین (۰ تا ۱)',
-            value: themeProvider.navBarOpacity,
-            min: 0,
-            max: 1,
-            divisions: 20,
-            onChanged: (v) => themeProvider.setNavBarOpacity(v),
-          ),
-
-          _buildSliderSetting(
-            title: 'گردی گوشه‌ها',
-            description: 'میزان گردی گوشه‌های منوی پایین',
-            value: themeProvider.navBarBorderRadius,
-            min: 0,
-            max: 50,
-            divisions: 50,
-            onChanged: (v) => themeProvider.setNavBarBorderRadius(v),
-          ),
-
-          _buildSliderSetting(
-            title: 'ارتفاع منو',
-            description: 'ارتفاع منوی پایین',
-            value: themeProvider.navBarHeight,
-            min: 50,
-            max: 80,
-            divisions: 30,
-            onChanged: (v) => themeProvider.setNavBarHeight(v),
-          ),
-
-          _buildSliderSetting(
-            title: 'فاصله افقی از لبه',
-            description: 'فاصله منو از لبه‌های چپ و راست',
-            value: themeProvider.navBarMarginHorizontal,
-            min: 0,
-            max: 60,
-            divisions: 30,
-            onChanged: (v) => themeProvider.setNavBarMarginHorizontal(v),
-          ),
-
-          _buildSliderSetting(
-            title: 'فاصله عمودی از پایین',
-            description: 'فاصله منو از پایین صفحه',
-            value: themeProvider.navBarMarginVertical,
-            min: 0,
-            max: 40,
-            divisions: 20,
-            onChanged: (v) => themeProvider.setNavBarMarginVertical(v),
-          ),
-
-          _buildColorPicker(
-            context,
-            title: 'رنگ آیتم انتخاب‌شده',
-            description: 'رنگ آیکون و نوشته گزینه فعال',
-            currentColor: themeProvider.navBarSelectedColor,
-            onColorSelected: (color) => themeProvider.setNavBarSelectedColor(color),
-          ),
-
-          _buildColorPicker(
-            context,
-            title: 'رنگ آیتم‌های غیرفعال',
-            description: 'رنگ آیکون و نوشته گزینه‌های غیرفعال',
-            currentColor: themeProvider.navBarUnselectedColor,
-            onColorSelected: (color) => themeProvider.setNavBarUnselectedColor(color),
-          ),
-
-          _buildColorPicker(
-            context,
-            title: 'رنگ نشان‌گر (دایره)',
-            description: 'رنگ دایره اطراف گزینه فعال',
-            currentColor: themeProvider.navBarIndicatorColor,
-            onColorSelected: (color) => themeProvider.setNavBarIndicatorColor(color),
-          ),
-
-          SwitchListTile(
-            title: Text('منوی شناور'),
-            subtitle: Text('فعال‌سازی حالت شناور منوی پایین'),
-            value: themeProvider.navBarFloating,
-            onChanged: (value) => themeProvider.setNavBarFloating(value),
-          ),
-
-          SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text('بازنشانی به حالت پیش‌فرض'),
-                  content: Text('آیا از بازنشانی تمام تنظیمات ظاهری به حالت اولیه اطمینان دارید؟'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text('لغو')),
-                    ElevatedButton(
-                      onPressed: () {
-                        themeProvider.resetToDefault();
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('تنظیمات به حالت پیش‌فرض بازنشانی شد')),
-                        );
-                      },
-                      child: Text('بازنشانی'),
+          Card(child: ListTile(title: Text('به‌روزرسانی دستی قیمت‌ها'), trailing: Icon(Icons.refresh), onTap: priceProvider.fetchPrices)),
+          Card(
+            child: ListTile(
+              title: Text('رنگ ثانویه'),
+              trailing: CircleAvatar(backgroundColor: secondaryColor, radius: 16),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text('انتخاب رنگ ثانویه'),
+                    content: SingleChildScrollView(
+                      child: ColorPicker(
+                        pickerColor: secondaryColor,
+                        onColorChanged: (color) {
+                          settings.setSecondaryColor(color);
+                        },
+                        colorPickerWidth: 300,
+                        pickerAreaHeightPercent: 0.7,
+                      ),
                     ),
-                  ],
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
-              foregroundColor: Colors.white,
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text('بستن'),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-            child: Text('بازنشانی به حالت پیش‌فرض'),
           ),
+          SizedBox(height: 20),
+          Text('مدیریت داده‌ها', style: Theme.of(context).textTheme.titleMedium),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: Icon(Icons.upload_file, color: Colors.green),
+                  title: Text('Export (خروجی گرفتن)'),
+                  subtitle: Text('ذخیره تمام داده‌ها در یک فایل JSON'),
+                  trailing: _isExporting ? SizedBox(width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.arrow_forward),
+                  onTap: _isExporting ? null : () => _exportData(context, dataProvider),
+                ),
+                Divider(height: 0),
+                ListTile(
+                  leading: Icon(Icons.download, color: Colors.blue),
+                  title: Text('Import (وارد کردن)'),
+                  subtitle: Text('بازیابی داده‌ها از فایل JSON'),
+                  trailing: _isImporting ? SizedBox(width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Icon(Icons.arrow_forward),
+                  onTap: _isImporting ? null : () => _importData(context, dataProvider),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 20),
+          Card(child: ListTile(title: Text('نسخه ۲.۰.۰'), subtitle: Text('ساخته شده توسط امیر - بنیانگذار نخودگرام'))),
+          SizedBox(height: 80),
         ],
       ),
     );
   }
 
-  Widget _buildColorPicker(BuildContext context, {
-    required String title,
-    required String description,
-    required Color currentColor,
-    required ValueChanged<Color> onColorSelected,
-  }) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        title: Text(title),
-        subtitle: Text(description, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: currentColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-        ),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () => showDialog(
-          context: context,
-          builder: (ctx) => ColorPickerDialog(
-            initialColor: currentColor,
-            onColorSelected: onColorSelected,
-          ),
-        ),
-      ),
-    );
+  Future<void> _exportData(BuildContext context, DataProvider dataProvider) async {
+    setState(() => _isExporting = true);
+    try {
+      final data = await dataProvider.exportAllData();
+      final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+      final tempDir = await path_provider.getTemporaryDirectory();
+      final file = File('${tempDir.path}/gold_coin_backup.json');
+      await file.writeAsString(jsonString);
+
+      // اشتراک‌گذاری فایل
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/json')],
+        text: 'فایل پشتیبان مدیریت طلا و سکه',
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطا در خروجی گرفتن: $e')),
+      );
+    }
+    setState(() => _isExporting = false);
   }
 
-  Widget _buildSliderSetting({
-    required String title,
-    required String description,
-    required double value,
-    required double min,
-    required double max,
-    required int divisions,
-    required ValueChanged<double> onChanged,
-  }) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(description, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-            Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: divisions,
-              label: value.toStringAsFixed(1),
-              onChanged: onChanged,
-            ),
+  Future<void> _importData(BuildContext context, DataProvider dataProvider) async {
+    setState(() => _isImporting = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      if (result == null) {
+        setState(() => _isImporting = false);
+        return;
+      }
+
+      final file = File(result.files.single.path!);
+      final jsonString = await file.readAsString();
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      // تأیید کاربر
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('هشدار!'),
+          content: Text('آیا از جایگزینی تمام داده‌های فعلی با داده‌های فایل وارد شده اطمینان دارید؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('لغو')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('تأیید', style: TextStyle(color: Colors.red))),
           ],
         ),
-      ),
-    );
-  }
-}
+      );
+      if (confirm != true) {
+        setState(() => _isImporting = false);
+        return;
+      }
 
-// -------------------- صفحه تنظیمات اصلی --------------------
-class SettingsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final settings = Provider.of<SettingsProvider>(context);
-    final priceProvider = Provider.of<PriceProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('تنظیمات'),
-        centerTitle: true,
-        backgroundColor: themeProvider.primaryColor,
-        foregroundColor: themeProvider.textColor,
-      ),
-      body: ListView(padding: EdgeInsets.all(16), children: [
-        Card(
-          child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
-            Text('نرخ سود بانکی'),
-            Slider(value: settings.bankInterestRate, min: 0, max: 50, divisions: 100,
-                label: '${settings.bankInterestRate.toStringAsFixed(1)}%',
-                onChanged: (v) => settings.setBankInterestRate(v)),
-            Text('${settings.bankInterestRate.toStringAsFixed(1)}%'),
-          ])),
-        ),
-        Card(
-          child: Padding(padding: EdgeInsets.all(16), child: Column(children: [
-            Text('فاصله به‌روزرسانی خودکار (ثانیه)'),
-            Slider(value: settings.autoUpdateInterval.toDouble(), min: 30, max: 600, divisions: (600-30)~/10,
-                label: '${settings.autoUpdateInterval}',
-                onChanged: (v) {
-                  settings.setAutoUpdateInterval(v.toInt());
-                  priceProvider.setAutoUpdateInterval(v.toInt());
-                }),
-            Text('${settings.autoUpdateInterval} ثانیه'),
-          ])),
-        ),
-        Card(child: ListTile(
-          title: Text('به‌روزرسانی دستی قیمت‌ها'),
-          trailing: Icon(Icons.refresh),
-          onTap: priceProvider.fetchPrices,
-        )),
-        Card(child: ListTile(
-          title: Text('🎨 تنظیمات ظاهری (تم)'),
-          subtitle: Text('شخصی‌سازی رنگ‌ها و منوی پایین'),
-          trailing: Icon(Icons.arrow_forward_ios, size: 16),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ThemeSettingsScreen()),
-            );
-          },
-        )),
-        SizedBox(height: 20),
-        Card(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('📊 قیمت‌های پایه (۱۴۰۵/۱/۱)',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                SizedBox(height: 8),
-                Text('قیمت‌های مرجع برای محاسبه عملکرد از ابتدای سال',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                Divider(),
-                ...basePrices140501.entries.map((entry) {
-                  final key = entry.key;
-                  final value = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(goldTypeName(key), style: TextStyle(fontSize: 14)),
-                        Text(formatRial(value), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                SizedBox(height: 8),
-                Text('* قیمت انس طلا به دلار است', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(height: 20),
-        Card(child: ListTile(
-          title: Text('نسخه ۲.۰.۰'),
-          subtitle: Text('ساخته شده توسط امیر - بنیانگذار نخودگرام'),
-        )),
-      ]),
-    );
+      await dataProvider.importData(data);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('داده‌ها با موفقیت بازیابی شدند')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('خطا در وارد کردن: $e')),
+      );
+    }
+    setState(() => _isImporting = false);
   }
 }
 
@@ -1936,27 +1545,20 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider(prefs)),
         ChangeNotifierProvider(create: (_) => PriceProvider(prefs)),
         ChangeNotifierProvider(create: (_) => SettingsProvider(prefs)),
+        ChangeNotifierProvider(create: (_) => BasePriceProvider()),
         ChangeNotifierProvider(create: (_) => DataProvider(goldBox: goldBox, coinBox: coinBox, saleBox: saleBox)),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, child) {
           return MaterialApp(
             title: 'مدیریت دارایی طلا و سکه',
             theme: ThemeData(
               useMaterial3: true,
               colorScheme: ColorScheme.fromSeed(
-                seedColor: themeProvider.primaryColor,
-                primary: themeProvider.primaryColor,
-                secondary: themeProvider.secondaryColor,
-                background: themeProvider.backgroundColor,
-                surface: themeProvider.surfaceColor,
-                onBackground: themeProvider.textColor,
-                onSurface: themeProvider.textColor,
+                seedColor: settings.secondaryColor,
               ),
-              scaffoldBackgroundColor: themeProvider.backgroundColor,
               fontFamily: 'Vazir',
             ),
             home: MainScreen(),
@@ -1985,45 +1587,39 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
     return Scaffold(
       extendBody: true,
       body: _screens[_selectedIndex],
       bottomNavigationBar: CrystalNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        backgroundColor: Colors.black.withOpacity(themeProvider.navBarOpacity),
-        selectedItemColor: themeProvider.navBarSelectedColor,
-        unselectedItemColor: themeProvider.navBarUnselectedColor,
-        enableFloatingNavBar: themeProvider.navBarFloating,
-        borderRadius: themeProvider.navBarBorderRadius,
-        margin: EdgeInsets.symmetric(
-          horizontal: themeProvider.navBarMarginHorizontal,
-          vertical: themeProvider.navBarMarginVertical,
-        ),
-        indicatorColor: themeProvider.navBarIndicatorColor,
-        height: themeProvider.navBarHeight,
+        backgroundColor: Colors.black.withOpacity(0.15),
+        selectedItemColor: Colors.blue.shade400,
+        unselectedItemColor: Colors.white70,
+        enableFloatingNavBar: true,
+        borderRadius: 32,
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        indicatorColor: Colors.blue.shade400.withOpacity(0.3),
         items: [
           CrystalNavigationBarItem(
             icon: Icons.home,
-            selectedColor: themeProvider.navBarSelectedColor,
+            selectedColor: Colors.blue.shade400,
           ),
           CrystalNavigationBarItem(
             icon: Icons.monetization_on,
-            selectedColor: themeProvider.navBarSelectedColor,
+            selectedColor: Colors.blue.shade400,
           ),
           CrystalNavigationBarItem(
             icon: Icons.account_balance_wallet,
-            selectedColor: themeProvider.navBarSelectedColor,
+            selectedColor: Colors.blue.shade400,
           ),
           CrystalNavigationBarItem(
             icon: Icons.bar_chart,
-            selectedColor: themeProvider.navBarSelectedColor,
+            selectedColor: Colors.blue.shade400,
           ),
           CrystalNavigationBarItem(
             icon: Icons.settings,
-            selectedColor: themeProvider.navBarSelectedColor,
+            selectedColor: Colors.blue.shade400,
           ),
         ],
       ),
