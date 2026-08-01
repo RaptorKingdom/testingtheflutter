@@ -18,7 +18,6 @@ import 'package:shamsi_date/shamsi_date.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:persian_datetimepickers/persian_datetimepickers.dart';
 import 'package:persian_number_utility/persian_number_utility.dart';
-import 'package:liquid_glass_bottom_bar/liquid_glass_bottom_bar.dart';
 
 part 'main.g.dart';
 
@@ -41,7 +40,6 @@ String formatDoubleWithoutTrailingZeros(double value) {
   }
 }
 
-/// فرمت عدد با جداکننده هزارگان به صورت انگلیسی (برای ورودی)
 String formatWithSeparator(double value) {
   if (value == 0) return '';
   return NumberFormat('#,###').format(value);
@@ -78,14 +76,12 @@ String goldTypeName(String k) {
   }
 }
 
-/// تبدیل عدد به تومان (برای نمایش زیر ورودی)
 String formatToman(double amount) {
   final toman = amount / 10;
   final formatted = NumberFormat('#,###').format(toman);
   return '${formatted.toPersianDigit()} تومان';
 }
 
-/// تبدیل عدد به حروف تومان
 String numberToTomanWords(double amount) {
   final toman = amount / 10;
   final intValue = toman.round();
@@ -93,7 +89,6 @@ String numberToTomanWords(double amount) {
   return words.toPersianDigit() + ' تومان';
 }
 
-/// ویجت ورودی عدد با جداکننده هزارگان، چپ‌چین و نمایش تومان برای قیمت‌ها
 class NumberInputWithToman extends StatefulWidget {
   final String label;
   final String? initialValue;
@@ -201,7 +196,6 @@ class _NumberInputWithTomanState extends State<NumberInputWithToman> {
   }
 }
 
-/// فرمتر برای جدا کردن هزارگان هنگام تایپ
 class ThousandsSeparatorInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -379,7 +373,6 @@ class ApiService {
           if (cd != null) { cVal = cd['value']; cPct = cd['percent']; }
         }
 
-        // تبدیل قیمت‌ها به ریال (به جز انس طلا که دلار است)
         const rialsMultiplier = 10.0;
         if (key != 'gold_ons') {
           cur = cur != null ? cur * rialsMultiplier : null;
@@ -1310,7 +1303,7 @@ void main() async {
   );
 }
 
-// ====================== MainScreen با LiquidGlassBottomBar ======================
+// ==================== Custom Blurred Bottom Navigation Bar ====================
 
 class MainScreen extends StatefulWidget {
   @override
@@ -1318,7 +1311,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+  int selectedIndex = 0;
   final List<Widget> _screens = [
     HomeScreen(),
     GoldListScreen(),
@@ -1329,49 +1322,109 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
     return Scaffold(
-      extendBody: true,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: LiquidGlassBottomBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          LiquidGlassBottomBarItem(
-            icon: Icons.home_outlined,
-            activeIcon: Icons.home,
-            label: 'خانه',
+      extendBody: true, // محتوا تا زیر منو ادامه پیدا می‌کند
+      body: _screens[selectedIndex],
+      bottomNavigationBar: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // ---------- منوی اصلی با افکت بلور و شکل بیضی ----------
+          Positioned(
+            bottom: 18,
+            left: 18,
+            right: 18,
+            height: 86,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  width: 2,
+                  color: theme.scaffoldBackgroundColor,
+                ),
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(24),
+                  topLeft: Radius.circular(24),
+                  bottomLeft: Radius.circular(52),
+                  bottomRight: Radius.circular(52),
+                ),
+                color: theme.scaffoldBackgroundColor.withOpacity(0.1),
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(24),
+                  topLeft: Radius.circular(24),
+                  bottomLeft: Radius.circular(52),
+                  bottomRight: Radius.circular(52),
+                ),
+                child: ClipPath(
+                  clipper: MyCustomClipper(),
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaY: 8, sigmaX: 8),
+                    child: Container(
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-          LiquidGlassBottomBarItem(
-            icon: Icons.monetization_on_outlined,
-            activeIcon: Icons.monetization_on,
-            label: 'طلای آب شده',
-          ),
-          LiquidGlassBottomBarItem(
-            icon: Icons.account_balance_wallet_outlined,
-            activeIcon: Icons.account_balance_wallet,
-            label: 'سکه',
-          ),
-          LiquidGlassBottomBarItem(
-            icon: Icons.bar_chart_outlined,
-            activeIcon: Icons.bar_chart,
-            label: 'نمودارها',
-          ),
-          LiquidGlassBottomBarItem(
-            icon: Icons.settings_outlined,
-            activeIcon: Icons.settings,
-            label: 'تنظیمات',
+
+          // ---------- آیتم‌های منو ----------
+          Positioned(
+            bottom: 18,
+            left: 22,
+            right: 22,
+            height: 86,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                _buildBNBItem(Icons.home_outlined, 0),
+                _buildBNBItem(Icons.monetization_on_outlined, 1),
+                _buildBNBItem(Icons.account_balance_wallet_outlined, 2),
+                _buildBNBItem(Icons.bar_chart_outlined, 3),
+                _buildBNBItem(Icons.settings_outlined, 4),
+              ],
+            ),
           ),
         ],
-        activeColor: Colors.blue.shade400,
-        height: 74,
-        showLabels: true,
-        barBlurSigma: 16,
-        activeBlurSigma: 24,
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       ),
     );
+  }
+
+  Widget _buildBNBItem(IconData icon, int index) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedIndex = index;
+        });
+      },
+      child: Icon(
+        icon,
+        color: selectedIndex == index ? Colors.amberAccent : Colors.white,
+        size: 30,
+      ),
+    );
+  }
+}
+
+// -------------------- Custom Clipper برای شکل بیضی منو --------------------
+class MyCustomClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(size.width, 0);
+    path.lineTo(64, size.height);
+    path.lineTo(0, size.height);
+    path.lineTo(0, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
+    return true;
   }
 }
