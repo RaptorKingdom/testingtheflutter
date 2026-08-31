@@ -8,6 +8,9 @@ on:
         required: true
         default: '60'
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -32,7 +35,7 @@ jobs:
         run: |
           mkdir -p generated-pictures
           python site.py &
-          sleep 10   # منتظر می‌مانیم تا سرور کاملاً بالا بیاید
+          sleep 10
 
       - name: Setup Cloudflare Tunnel
         run: |
