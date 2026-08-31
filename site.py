@@ -1,4 +1,4 @@
-# app.py
+# site.py
 import logging
 import sys
 import os
@@ -8,7 +8,7 @@ from random import random as uniform, sample, choice
 from time import sleep
 import requests
 from urllib.parse import quote, urlencode
-from flask import Flask, render_template, request, url_for, send_from_directory, redirect
+from flask import Flask, render_template_string, request, url_for, send_from_directory, jsonify
 from playwright.async_api import async_playwright
 
 # ------------------ Logging Setup ------------------
@@ -199,7 +199,6 @@ def get_key():
                 return key
 
     info_logger.info('Key no longer valid. Looking for a new key...')
-    # Use a new event loop if needed
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:
@@ -216,67 +215,7 @@ def get_key():
 app = Flask(__name__)
 app.config['GENERATED_FOLDER'] = os.path.join(os.getcwd(), 'generated-pictures')
 
-@app.route('/generated/<filename>')
-def serve_image(filename):
-    return send_from_directory(app.config['GENERATED_FOLDER'], filename)
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        try:
-            base_filename = request.form.get('base_filename', '').strip()
-            amount = int(request.form.get('amount', 1))
-            prompt = request.form.get('prompt', 'RANDOM').strip()
-            prompt_size = int(request.form.get('prompt_size', 10))
-            negative_prompt = request.form.get('negative_prompt', 'nudity text').strip().replace(' ', ', ')
-            style = request.form.get('style', 'RANDOM')
-            resolution = request.form.get('resolution', '512x768')
-            guidance_scale = float(request.form.get('guidance_scale', 7))
-
-            # Validate resolution
-            if not re.match(r'\d{2,4}x\d{2,4}', resolution):
-                raise ValueError('Invalid resolution format. Use e.g. 512x768.')
-
-            generator = image_generator(
-                base_filename=base_filename,
-                amount=amount,
-                prompt=prompt,
-                prompt_size=prompt_size,
-                negative_prompt=negative_prompt,
-                style=style,
-                resolution=resolution,
-                guidance_scale=guidance_scale
-            )
-
-            images = []
-            for result in generator:
-                # Convert filename to URL
-                filename = os.path.basename(result['filename'])
-                url = url_for('serve_image', filename=filename)
-                images.append({
-                    'url': url,
-                    'prompt': result['prompt'],
-                    'negative_prompt': result['negative_prompt']
-                })
-
-            return render_template('index.html', images=images, error=None)
-        except Exception as e:
-            error_msg = str(e)
-            info_logger.error(f'Error: {error_msg}')
-            return render_template('index.html', images=None, error=error_msg)
-
-    # GET request - show form
-    return render_template('index.html', images=None, error=None)
-
-# ------------------ HTML Template (embedded for simplicity) ------------------
-# We'll put the template as a string and render it using render_template_string
-# to keep everything in one file. Alternatively we could create a templates dir,
-# but the user wants all in one file.
-@app.route('/')
-def index_page():
-    return render_template_string(HTML_TEMPLATE)
-
-# We'll use render_template_string for both, so define HTML_TEMPLATE.
+# Embedded HTML template
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -392,15 +331,48 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
-# We need to use render_template_string instead of render_template since we embed template.
-# Modify routes accordingly:
-from flask import render_template_string
+@app.route('/generated/<filename>')
+def serve_image(filename):
+    return send_from_directory(app.config['GENERATED_FOLDER'], filename)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         try:
-            # ... same as before ...
+            base_filename = request.form.get('base_filename', '').strip()
+            amount = int(request.form.get('amount', 1))
+            prompt = request.form.get('prompt', 'RANDOM').strip()
+            prompt_size = int(request.form.get('prompt_size', 10))
+            negative_prompt = request.form.get('negative_prompt', 'nudity text').strip().replace(' ', ', ')
+            style = request.form.get('style', 'RANDOM')
+            resolution = request.form.get('resolution', '512x768')
+            guidance_scale = float(request.form.get('guidance_scale', 7))
+
+            # Validate resolution
+            if not re.match(r'\d{2,4}x\d{2,4}', resolution):
+                raise ValueError('Invalid resolution format. Use e.g. 512x768.')
+
+            generator = image_generator(
+                base_filename=base_filename,
+                amount=amount,
+                prompt=prompt,
+                prompt_size=prompt_size,
+                negative_prompt=negative_prompt,
+                style=style,
+                resolution=resolution,
+                guidance_scale=guidance_scale
+            )
+
+            images = []
+            for result in generator:
+                filename = os.path.basename(result['filename'])
+                url = url_for('serve_image', filename=filename)
+                images.append({
+                    'url': url,
+                    'prompt': result['prompt'],
+                    'negative_prompt': result['negative_prompt']
+                })
+
             return render_template_string(HTML_TEMPLATE, images=images, error=None)
         except Exception as e:
             error_msg = str(e)
@@ -410,7 +382,15 @@ def index():
     # GET request - show form
     return render_template_string(HTML_TEMPLATE, images=None, error=None)
 
+@app.route('/api/status')
+def api_status():
+    status = {
+        'status': 'running',
+        'generated_images_count': len(os.listdir(app.config['GENERATED_FOLDER'])) if os.path.exists(app.config['GENERATED_FOLDER']) else 0,
+        'last_key_exists': os.path.exists('last_key.txt')
+    }
+    return jsonify(status)
+
 if __name__ == '__main__':
-    # Ensure directories exist
     os.makedirs('generated-pictures', exist_ok=True)
     app.run(debug=True, host='0.0.0.0', port=5000)
