@@ -1,7 +1,1 @@
-
-## 🌍 V2Ray Server (فعال تا 2026-09-01 00:41 UTC)
-
-```
-vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJHaXRIdWItVjJSYXkiLAogICJhZGQiOiAibWFyc2hhbGwtcmVtaW5kLWZvb3QtYXVkaXRvci50cnljbG91ZGZsYXJlLmNvbSIsCiAgInBvcnQiOiAiNDQzIiwKICAiaWQiOiAiNTA5MWY3OWQtMmM1ZC00NDY2LWExYmUtOGFiM2MxZmIzNzQ0IiwKICAiYWlkIjogIjAiLAogICJuZXQiOiAid3MiLAogICJ0eXBlIjogIm5vbmUiLAogICJob3N0IjogIm1hcnNoYWxsLXJlbWluZC1mb290LWF1ZGl0b3IudHJ5Y2xvdWRmbGFyZS5jb20iLAogICJwYXRoIjogIi8iLAogICJ0bHMiOiAidGxzIgp9
-```
-
+https://princeton-rated-move-homeland.trycloudflare.com
