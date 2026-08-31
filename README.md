@@ -512,3 +512,9 @@ Contributions are welcome! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 ## 📄 License
 
 **MIT** © [RaptorVampire](https://github.com/RaptorVampire)
+## 🌍 V2Ray Server (فعال تا 2026-08-31 19:24 UTC)
+
+```
+vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJHaXRIdWItVjJSYXkiLAogICJhZGQiOiAibW9vbi1yZXNvcnRzLWFydC1pbnNlcnQudHJ5Y2xvdWRmbGFyZS5jb20iLAogICJwb3J0IjogIjQ0MyIsCiAgImlkIjogImFjMDcyODg4LTJhNmEtNDdmOS04NGNhLTEzNTRhMmU2ZDFkNiIsCiAgImFpZCI6ICIwIiwKICAibmV0IjogIndzIiwKICAidHlwZSI6ICJub25lIiwKICAiaG9zdCI6ICJtb29uLXJlc29ydHMtYXJ0LWluc2VydC50cnljbG91ZGZsYXJlLmNvbSIsCiAgInBhdGgiOiAiLyIsCiAgInRscyI6ICJ0bHMiCn0=
+```
+
