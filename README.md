@@ -1,1 +1,8 @@
 https://personal-option-blonde-newer.trycloudflare.com
+
+## 🌍 V2Ray Server (فعال تا 2026-09-01 06:44 UTC)
+
+```
+vmess://ewogICJ2IjogIjIiLAogICJwcyI6ICJHaXRIdWItVjJSYXkiLAogICJhZGQiOiAicGhyYXNlLWZvcmVzdHMtY3Jhd2ZvcmQtZGlldC50cnljbG91ZGZsYXJlLmNvbSIsCiAgInBvcnQiOiAiNDQzIiwKICAiaWQiOiAiMGJkZDczNDAtZGVhNC00ZDAwLWIyZmEtMDEyZThkOWRiZTMyIiwKICAiYWlkIjogIjAiLAogICJuZXQiOiAid3MiLAogICJ0eXBlIjogIm5vbmUiLAogICJob3N0IjogInBocmFzZS1mb3Jlc3RzLWNyYXdmb3JkLWRpZXQudHJ5Y2xvdWRmbGFyZS5jb20iLAogICJwYXRoIjogIi8iLAogICJ0bHMiOiAidGxzIgp9
+```
+
