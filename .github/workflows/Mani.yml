@@ -45,7 +45,7 @@ jobs:
           unzip xray.zip -d xray
           chmod +x xray/xray
 
-      - name: Setup tunnel (trycloudflare only)
+      - name: Setup tunnel (trycloudflare or localhost.run)
         id: tunnel
         run: |
           UUID=$(cat /proc/sys/kernel/random/uuid)
@@ -53,39 +53,54 @@ jobs:
           echo "UUID=$UUID" >> $GITHUB_ENV
           echo "PORT=$PORT" >> $GITHUB_ENV
 
-          echo "🌐 شروع تونل trycloudflare روی پورت $PORT ..."
-          # اجرای cloudflared و نمایش همزمان خروجی در لاگ workflow
-          ./cloudflared tunnel --url http://localhost:$PORT --no-autoupdate 2>&1 | tee tunnel.log &
+          # --- تلاش برای trycloudflare ---
+          echo "🌐 تلاش برای trycloudflare..."
+          ./cloudflared tunnel --url http://localhost:$PORT --no-autoupdate > tunnel.log 2>&1 &
           CLOUDFLARED_PID=$!
-          
-          # صبر اولیه بیشتر
-          sleep 10
+          sleep 5
 
           TUNNEL_URL=""
-          # تا ۱۲۰ ثانیه صبر می‌کنیم (۴۰ بار × ۳ ثانیه)
-          for i in $(seq 1 40); do
-            # اگر پروسه مرده بود، لاگ کامل رو چاپ کن و خطا بده
+          for i in $(seq 1 30); do
             if ! kill -0 $CLOUDFLARED_PID 2>/dev/null; then
-              echo "⛔ پروسه cloudflared از بین رفت."
-              echo "📄 محتوای tunnel.log:"
+              echo "⛔ پروسه cloudflared از بین رفت"
               cat tunnel.log
-              exit 1
-            fi
-
-            # جستجوی URL trycloudflare در لاگ
-            if grep -q 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' tunnel.log; then
-              TUNNEL_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' tunnel.log | head -n1)
-              echo "✅ URL تونل دریافت شد: $TUNNEL_URL"
               break
             fi
-            sleep 3
+            if grep -q 'trycloudflare.com' tunnel.log; then
+              TUNNEL_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' tunnel.log | head -n1)
+              echo "✅ trycloudflare URL دریافت شد: $TUNNEL_URL"
+              break
+            fi
+            sleep 2
           done
 
-          # اگر بعد از ۱۲۰ ثانیه URL پیدا نشد
+          # اگر trycloudflare شکست خورد → fallback به localhost.run
           if [ -z "$TUNNEL_URL" ]; then
-            echo "❌ بعد از ۱۲۰ ثانیه URL تونل پیدا نشد."
-            echo "📄 محتوای کامل tunnel.log:"
-            cat tunnel.log
+            echo "⚠️ trycloudflare شکست خورد، رفتن به localhost.run..."
+            kill $CLOUDFLARED_PID 2>/dev/null || true
+
+            # اجرای تونل SSH در پس‌زمینه
+            ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:$PORT nokey@localhost.run > ssh_tunnel.log 2>&1 &
+            SSH_PID=$!
+            sleep 5
+
+            for i in $(seq 1 30); do
+              if ! kill -0 $SSH_PID 2>/dev/null; then
+                echo "⛔ پروسه SSH از بین رفت"
+                cat ssh_tunnel.log
+                exit 1
+              fi
+              if grep -q 'https://' ssh_tunnel.log; then
+                TUNNEL_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.lhrtunnel\.link' ssh_tunnel.log | head -n1)
+                echo "✅ localhost.run URL دریافت شد: $TUNNEL_URL"
+                break
+              fi
+              sleep 2
+            done
+          fi
+
+          if [ -z "$TUNNEL_URL" ]; then
+            echo "❌ هیچ تونلی در دسترس نیست"
             exit 1
           fi
 
@@ -157,40 +172,7 @@ jobs:
           git commit -m "🔄 به‌روزرسانی لینک V2Ray" || echo "بدون تغییر جدید"
           git push
 
-      - name: Keep server alive for 6 hours with watchdog
+      - name: Keep server alive for 6 hours
         run: |
-          echo "⏳ سرور با نظارت (watchdog) تا ۶ ساعت فعال خواهد ماند..."
-          END_TIME=$((SECONDS+21600))  # 6 hours in seconds
-
-          while [ $SECONDS -lt $END_TIME ]; do
-            # Check cloudflared
-            if ! pgrep -f "cloudflared tunnel" > /dev/null; then
-              echo "$(date -u +'%H:%M:%S') ⚠️ cloudflared از کار افتاد، در حال راه‌اندازی مجدد..."
-              ./cloudflared tunnel --url http://localhost:$PORT --no-autoupdate 2>&1 | tee tunnel.log &
-              sleep 10
-            fi
-
-            # Check Xray
-            if ! pgrep -f "xray/xray" > /dev/null; then
-              echo "$(date -u +'%H:%M:%S') ⚠️ Xray از کار افتاد، در حال راه‌اندازی مجدد..."
-              nohup ./xray/xray run -config xray/config.json &
-              sleep 3
-            fi
-
-            # Test tunnel URL (optional end-to-end check)
-            if [ -n "$TUNNEL_URL" ]; then
-              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$TUNNEL_URL")
-              if [ "$HTTP_CODE" = "000" ]; then
-                echo "$(date -u +'%H:%M:%S') ⚠️ تونل پاسخ نمی‌دهد (HTTP 000)، در حال راه‌اندازی مجدد cloudflared..."
-                pkill -f "cloudflared tunnel" || true
-                ./cloudflared tunnel --url http://localhost:$PORT --no-autoupdate 2>&1 | tee tunnel.log &
-                sleep 10
-              else
-                echo "$(date -u +'%H:%M:%S') ✅ تونل فعال است (HTTP $HTTP_CODE)"
-              fi
-            fi
-
-            sleep 60  # Check every 60 seconds
-          done
-
-          echo "⏰ زمان ۶ ساعت به پایان رسید. سرور متوقف می‌شود."
+          echo "⏳ سرور تا ۶ ساعت دیگر فعال خواهد ماند..."
+          sleep 21600
