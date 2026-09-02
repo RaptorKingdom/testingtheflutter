@@ -45,7 +45,7 @@ jobs:
           unzip xray.zip -d xray
           chmod +x xray/xray
 
-      - name: Setup tunnel (trycloudflare or localhost.run)
+      - name: Setup tunnel (trycloudflare only)
         id: tunnel
         run: |
           UUID=$(cat /proc/sys/kernel/random/uuid)
@@ -53,54 +53,39 @@ jobs:
           echo "UUID=$UUID" >> $GITHUB_ENV
           echo "PORT=$PORT" >> $GITHUB_ENV
 
-          # --- تلاش برای trycloudflare ---
-          echo "🌐 تلاش برای trycloudflare..."
-          ./cloudflared tunnel --url http://localhost:$PORT --no-autoupdate > tunnel.log 2>&1 &
+          echo "🌐 شروع تونل trycloudflare روی پورت $PORT ..."
+          # اجرای cloudflared و نمایش همزمان خروجی در لاگ workflow
+          ./cloudflared tunnel --url http://localhost:$PORT --no-autoupdate 2>&1 | tee tunnel.log &
           CLOUDFLARED_PID=$!
-          sleep 5
+          
+          # صبر اولیه بیشتر
+          sleep 10
 
           TUNNEL_URL=""
-          for i in $(seq 1 30); do
+          # تا ۱۲۰ ثانیه صبر می‌کنیم (۴۰ بار × ۳ ثانیه)
+          for i in $(seq 1 40); do
+            # اگر پروسه مرده بود، لاگ کامل رو چاپ کن و خطا بده
             if ! kill -0 $CLOUDFLARED_PID 2>/dev/null; then
-              echo "⛔ پروسه cloudflared از بین رفت"
+              echo "⛔ پروسه cloudflared از بین رفت."
+              echo "📄 محتوای tunnel.log:"
               cat tunnel.log
-              break
+              exit 1
             fi
-            if grep -q 'trycloudflare.com' tunnel.log; then
+
+            # جستجوی URL trycloudflare در لاگ
+            if grep -q 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' tunnel.log; then
               TUNNEL_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.trycloudflare\.com' tunnel.log | head -n1)
-              echo "✅ trycloudflare URL دریافت شد: $TUNNEL_URL"
+              echo "✅ URL تونل دریافت شد: $TUNNEL_URL"
               break
             fi
-            sleep 2
+            sleep 3
           done
 
-          # اگر trycloudflare شکست خورد → fallback به localhost.run
+          # اگر بعد از ۱۲۰ ثانیه URL پیدا نشد
           if [ -z "$TUNNEL_URL" ]; then
-            echo "⚠️ trycloudflare شکست خورد، رفتن به localhost.run..."
-            kill $CLOUDFLARED_PID 2>/dev/null || true
-
-            # اجرای تونل SSH در پس‌زمینه
-            ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -R 80:localhost:$PORT nokey@localhost.run > ssh_tunnel.log 2>&1 &
-            SSH_PID=$!
-            sleep 5
-
-            for i in $(seq 1 30); do
-              if ! kill -0 $SSH_PID 2>/dev/null; then
-                echo "⛔ پروسه SSH از بین رفت"
-                cat ssh_tunnel.log
-                exit 1
-              fi
-              if grep -q 'https://' ssh_tunnel.log; then
-                TUNNEL_URL=$(grep -o 'https://[a-zA-Z0-9.-]*\.lhrtunnel\.link' ssh_tunnel.log | head -n1)
-                echo "✅ localhost.run URL دریافت شد: $TUNNEL_URL"
-                break
-              fi
-              sleep 2
-            done
-          fi
-
-          if [ -z "$TUNNEL_URL" ]; then
-            echo "❌ هیچ تونلی در دسترس نیست"
+            echo "❌ بعد از ۱۲۰ ثانیه URL تونل پیدا نشد."
+            echo "📄 محتوای کامل tunnel.log:"
+            cat tunnel.log
             exit 1
           fi
 
